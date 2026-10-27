@@ -20,7 +20,7 @@ service cloud.firestore {
              && request.resource.data.shopLocation.size() <= 100
              && request.resource.data.destination is string
              && request.resource.data.destination.matches(
-                  '^https://(g[.]page/r/[^/]+/review([?].*)?|search[.]google[.]com/local/writereview[?].+)$'
+                  '^https://www[.]google[.]com/search[?].+'
                 )
              && request.resource.data.keys().hasAll([
                'shopName',
