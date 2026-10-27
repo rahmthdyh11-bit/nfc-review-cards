@@ -241,6 +241,9 @@
         placeholder="Example: Bandung, West Java"
     >
 
+    <p>
+        <a id="shopSearch" href="#" target="_blank" rel="noopener noreferrer" hidden>Search this shop on Google</a>
+    </p>
 
     <label for="reviewUrl">
 
@@ -414,6 +417,10 @@
             "shopLocation"
         );
 
+    const shopSearch =
+        document.getElementById(
+            "shopSearch"
+        );
 
     const reviewUrl =
         document.getElementById(
@@ -424,6 +431,24 @@
         document.getElementById(
             "mapsPreview"
         );
+
+    function updateShopSearch() {
+        const searchText = [
+            shopName.value.trim(),
+            shopLocation.value.trim()
+        ].filter(Boolean).join(" ");
+
+        if (!searchText) {
+            shopSearch.hidden = true;
+            shopSearch.removeAttribute("href");
+            return;
+        }
+
+        const searchUrl = new URL("https://www.google.com/search");
+        searchUrl.searchParams.set("q", searchText);
+        shopSearch.href = searchUrl.toString();
+        shopSearch.hidden = false;
+    }
 
     function updateDestinationPreview() {
         const destination = reviewUrl.value.trim();
@@ -437,6 +462,8 @@
         mapsPreview.hidden = false;
     }
 
+    shopName.addEventListener("input", updateShopSearch);
+    shopLocation.addEventListener("input", updateShopSearch);
     reviewUrl.addEventListener("input", updateDestinationPreview);
 
 
@@ -820,6 +847,8 @@
             shopLocation.value =
                 "";
 
+            updateShopSearch();
+
             reviewUrl.value =
                 "";
 
@@ -880,6 +909,8 @@
 
                 shopLocation.value =
                     data.shopLocation || "";
+
+                updateShopSearch();
 
                 reviewUrl.value =
                     data.destination || "";
