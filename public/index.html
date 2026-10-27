@@ -246,8 +246,14 @@
                         active: true
                     });
 
-                    showMessage("Kartu berhasil diaktifkan", "Mengarahkan ke hasil pencarian Google...");
-                    window.location.replace(destination);
+                    showMessage("Kartu berhasil diaktifkan", "Kartu siap digunakan. Pemindaian berikutnya akan membuka link tujuan.");
+                    activation.innerHTML = "";
+                    const openDestination = document.createElement("a");
+                    openDestination.href = destination;
+                    openDestination.target = "_blank";
+                    openDestination.rel = "noopener noreferrer";
+                    openDestination.textContent = "Buka link tujuan";
+                    activation.appendChild(openDestination);
                 } catch (error) {
                     console.error("Card activation failed:", error);
                     message.textContent = error.message === "Kartu belum didaftarkan. Hubungi admin."
