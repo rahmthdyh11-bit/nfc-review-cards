@@ -244,7 +244,7 @@
 
     <label for="reviewUrl">
 
-        Google Maps Search Link
+        Google Search Link
 
     </label>
 
@@ -256,8 +256,8 @@
     >
 
     <p>
-        This free link opens Google Maps search results for the business.
-        It is not a direct Google review link.
+        This free link opens Google Search results in the browser, not Google Maps.
+        Choose the correct business in the results to view its reviews.
         <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Preview search</a>
     </p>
 
@@ -440,11 +440,10 @@
             return;
         }
 
-        const mapsUrl = new URL("https://www.google.com/maps/search/");
-        mapsUrl.searchParams.set("api", "1");
-        mapsUrl.searchParams.set("query", searchText);
-        reviewUrl.value = mapsUrl.toString();
-        mapsPreview.href = mapsUrl.toString();
+        const searchUrl = new URL("https://www.google.com/search");
+        searchUrl.searchParams.set("q", searchText);
+        reviewUrl.value = searchUrl.toString();
+        mapsPreview.href = searchUrl.toString();
         mapsPreview.hidden = false;
     }
 
@@ -1028,7 +1027,7 @@
 
 
                 message.textContent =
-                    "Enter a shop name and location to generate the Google Maps search link.";
+                    "Enter a shop name and location to generate the Google Search link.";
 
 
                 return;
