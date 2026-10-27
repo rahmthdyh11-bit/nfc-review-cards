@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/aktivasi",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/edit/:cardId",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/kelola-kartu",
+      "destination": "/admin.html"
+    },
+    {
       "source": "/:cardId",
       "destination": "/index.html"
     }
