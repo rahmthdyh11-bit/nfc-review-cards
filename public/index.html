@@ -123,7 +123,7 @@
         }
 
         function openActivationForm(cardId) {
-            showMessage("Aktivasi kartu", "Isi nama toko dan lokasi. Link pencarian Google akan dibuat otomatis.");
+            showMessage("Aktivasi kartu", "Isi nama toko, lokasi, dan tempel link Google yang ingin dibuka saat kartu dipindai.");
             activation.innerHTML = `
                 <form id="activationForm">
                     <p class="muted">Kode kartu: <strong id="cardCode"></strong></p>
@@ -131,74 +131,71 @@
                     <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi">
                     <label for="shopLocation">Kota, kabupaten, atau kecamatan</label>
                     <input id="shopLocation" name="shopLocation" type="text" maxlength="100" required autocomplete="address-level2" placeholder="Contoh: Bandung, Jawa Barat">
-                    <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Cari toko di Google</a>
-                    <label for="destination">Link pencarian Google</label>
-                    <input id="destination" name="destination" type="url" readonly required>
-                    <p class="muted">Setelah kartu diaktifkan, scan akan membuka hasil Google Search di browser. Pilih toko dari hasil pencarian untuk melihat ulasannya. Ini bukan formulir ulasan langsung.</p>
+                    <label for="destination">Link Google tujuan</label>
+                    <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Tempel link Google Search atau link ulasan">
+                    <p class="muted">Tempel link yang ingin dibuka ketika kartu dipindai. Link ulasan langsung biasanya membawa pelanggan ke halaman tulis ulasan.</p>
+                    <a id="destinationPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Pratinjau link</a>
                     <button id="activateButton" type="submit">Aktifkan kartu</button>
                 </form>
             `;
             document.getElementById("cardCode").textContent = cardId;
 
             const form = document.getElementById("activationForm");
-            const shopNameInput = document.getElementById("shopName");
-            const shopLocationInput = document.getElementById("shopLocation");
             const destinationInput = document.getElementById("destination");
-            const mapsPreview = document.getElementById("mapsPreview");
+            const destinationPreview = document.getElementById("destinationPreview");
             const button = document.getElementById("activateButton");
 
-            function updateMapsSearchLink() {
-                const searchText = [
-                    shopNameInput.value.trim(),
-                    shopLocationInput.value.trim()
-                ].filter(Boolean).join(" ");
-
-                if (!searchText) {
-                    destinationInput.value = "";
-                    mapsPreview.hidden = true;
-                    mapsPreview.removeAttribute("href");
+            function updateDestinationPreview() {
+                const value = destinationInput.value.trim();
+                if (!value) {
+                    destinationPreview.hidden = true;
+                    destinationPreview.removeAttribute("href");
                     return;
                 }
 
-                const searchUrl = new URL("https://www.google.com/search");
-                searchUrl.searchParams.set("q", searchText);
-                destinationInput.value = searchUrl.toString();
-                mapsPreview.href = searchUrl.toString();
-                mapsPreview.hidden = false;
+                destinationPreview.href = value;
+                destinationPreview.hidden = false;
             }
 
-            shopNameInput.addEventListener("input", updateMapsSearchLink);
-            shopLocationInput.addEventListener("input", updateMapsSearchLink);
+            destinationInput.addEventListener("input", updateDestinationPreview);
 
             form.addEventListener("submit", async (event) => {
                 event.preventDefault();
                 message.textContent = "";
 
-                const shop = shopNameInput.value.trim();
-                const shopLocation = shopLocationInput.value.trim();
+                const shop = document.getElementById("shopName").value.trim();
+                const shopLocation = document.getElementById("shopLocation").value.trim();
                 const destination = destinationInput.value.trim();
                 let parsedDestination;
                 try {
                     parsedDestination = new URL(destination);
                 } catch {
-                    message.textContent = "Isi nama toko dan lokasi untuk membuat link pencarian Google.";
+                    message.textContent = "Tempel link Google yang valid.";
                     return;
                 }
 
-                const isGoogleSearchLink =
+                const isAllowedGoogleLink =
                     parsedDestination.protocol === "https:" &&
-                    parsedDestination.hostname === "www.google.com" &&
-                    parsedDestination.pathname === "/search" &&
-                    parsedDestination.searchParams.has("q");
+                    (
+                        ((parsedDestination.hostname === "www.google.com" ||
+                            parsedDestination.hostname === "google.com") &&
+                            parsedDestination.pathname === "/search") ||
+                        (parsedDestination.hostname === "search.google.com" &&
+                            parsedDestination.pathname === "/local/writereview") ||
+                        (parsedDestination.hostname === "g.page" &&
+                            /^\/r\/[^/]+\/review\/?$/.test(parsedDestination.pathname)) ||
+                        (parsedDestination.hostname === "maps.app.goo.gl" &&
+                            parsedDestination.pathname.length > 1)
+                    );
 
                 if (
                     !shop ||
                     shop.length > 100 ||
                     !shopLocation ||
                     shopLocation.length > 100 ||
-                    !isGoogleSearchLink
+                    !isAllowedGoogleLink
                 ) {
-                    message.textContent = "Isi nama toko dan lokasi agar link pencarian Google dibuat otomatis.";
+                    message.textContent = "Gunakan link HTTPS dari Google Search, Google review, atau Google Maps.";
                     return;
                 }
 
