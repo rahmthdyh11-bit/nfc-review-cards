@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>NFC Review Cards - Admin Login</title>
+
+
+    <style>
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            max-width: 500px;
+
+            margin: 80px auto;
+
+            padding: 20px;
+
+        }
+
+
+        h1 {
+
+            text-align: center;
+
+        }
+
+
+        input {
+
+            width: 100%;
+
+            padding: 12px;
+
+            margin: 8px 0;
+
+            box-sizing: border-box;
+
+        }
+
+
+        button {
+
+            width: 100%;
+
+            padding: 12px;
+
+            margin-top: 10px;
+
+            cursor: pointer;
+
+        }
+
+
+        button:disabled {
+
+            cursor: not-allowed;
+
+            opacity: 0.6;
+
+        }
+
+
+        #message {
+
+            margin-top: 15px;
+
+            text-align: center;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <h1>
+        Admin Login
+    </h1>
+
+
+    <input
+        type="email"
+        id="email"
+        placeholder="Admin Email"
+    >
+
+
+    <input
+        type="password"
+        id="password"
+        placeholder="Password"
+    >
+
+
+    <button id="loginBtn">
+
+        Login
+
+    </button>
+
+
+    <p id="message"></p>
+
+
+
+    <script type="module">
+
+
+        import {
+
+            initializeApp
+
+        } from
+            "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+
+
+        import {
+
+            getAuth,
+
+            signInWithEmailAndPassword
+
+        } from
+            "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+
+
+        const firebaseConfig = {
+
+            apiKey:
+                "AIzaSyDN0CS9x7wVEYYScD1VRks1kr8dClNh11c",
+
+            authDomain:
+                "nfc-review-cards-690a6.firebaseapp.com",
+
+            projectId:
+                "nfc-review-cards-690a6",
+
+            storageBucket:
+                "nfc-review-cards-690a6.firebasestorage.app",
+
+            messagingSenderId:
+                "1042185717113",
+
+            appId:
+                "1:1042185717113:web:e760162cef6fa00da5dba8"
+
+        };
+
+
+
+        const app =
+            initializeApp(
+                firebaseConfig
+            );
+
+
+        const auth =
+            getAuth(app);
+
+
+
+        const message =
+            document.getElementById(
+                "message"
+            );
+
+
+        const loginBtn =
+            document.getElementById(
+                "loginBtn"
+            );
+
+
+
+        /*
+            Get Card ID from URL.
+
+            Example:
+
+            /admin.html?card=39ZBUL
+        */
+
+        const urlParams =
+            new URLSearchParams(
+                window.location.search
+            );
+
+
+        const urlCardId =
+            urlParams.get("card");
+
+
+
+        /*
+            SessionStorage is kept as
+            a fallback.
+        */
+
+        const sessionCardId =
+            sessionStorage.getItem(
+                "selectedCard"
+            );
+
+
+
+        const cardId =
+            urlCardId ||
+            sessionCardId;
+
+
+
+        console.log(
+            "CARD ID FROM URL:",
+            urlCardId
+        );
+
+
+        console.log(
+            "CARD ID FROM SESSION:",
+            sessionCardId
+        );
+
+
+        console.log(
+            "FINAL CARD ID:",
+            cardId
+        );
+
+
+
+        /*
+            Login function
+        */
+
+        async function loginWithRetry(
+
+            email,
+
+            password
+
+        ) {
+
+
+            const maxAttempts = 3;
+
+
+            for (
+                let attempt = 1;
+                attempt <= maxAttempts;
+                attempt++
+            ) {
+
+
+                try {
+
+
+                    console.log(
+                        "LOGIN ATTEMPT:",
+                        attempt
+                    );
+
+
+                    /*
+                        Show current status.
+                    */
+
+                    if (
+                        attempt === 1
+                    ) {
+
+                        message.textContent =
+                            "Signing in...";
+
+                    }
+
+                    else {
+
+                        message.textContent =
+                            "Connection interrupted. Retrying...";
+
+                    }
+
+
+
+                    await signInWithEmailAndPassword(
+
+                        auth,
+
+                        email,
+
+                        password
+
+                    );
+
+
+                    console.log(
+                        "LOGIN SUCCESSFUL"
+                    );
+
+
+                    return true;
+
+
+                }
+
+
+                catch (error) {
+
+
+                    console.error(
+
+                        "LOGIN ATTEMPT " +
+                        attempt +
+                        " ERROR:",
+
+                        error
+
+                    );
+
+
+                    /*
+                        Only retry network errors.
+
+                        Wrong password,
+                        invalid email,
+                        disabled user,
+                        etc.
+
+                        should NOT be retried.
+                    */
+
+                    if (
+
+                        error.code !==
+                        "auth/network-request-failed"
+
+                    ) {
+
+
+                        throw error;
+
+                    }
+
+
+                    /*
+                        If this was the
+                        final attempt,
+                        let the error reach
+                        the outer catch.
+                    */
+
+                    if (
+
+                        attempt ===
+                        maxAttempts
+
+                    ) {
+
+
+                        throw error;
+
+                    }
+
+
+                    /*
+                        Exponential-style delay:
+
+                        Attempt 1 → 1 second
+                        Attempt 2 → 2 seconds
+                    */
+
+                    const delay =
+                        attempt * 1000;
+
+
+                    await new Promise(
+
+                        resolve =>
+
+                            setTimeout(
+                                resolve,
+                                delay
+                            )
+
+                    );
+
+                }
+
+            }
+
+
+            return false;
+
+        }
+
+
+
+        loginBtn.addEventListener(
+
+            "click",
+
+            async () => {
+
+
+                const email =
+                    document
+                        .getElementById(
+                            "email"
+                        )
+                        .value
+                        .trim();
+
+
+                const password =
+                    document
+                        .getElementById(
+                            "password"
+                        )
+                        .value;
+
+
+
+                if (!email || !password) {
+
+
+                    message.textContent =
+                        "Please enter email and password.";
+
+
+                    return;
+
+                }
+
+
+
+                /*
+                    Prevent multiple
+                    simultaneous login attempts.
+                */
+
+                loginBtn.disabled =
+                    true;
+
+
+                loginBtn.textContent =
+                    "Signing in...";
+
+
+
+                try {
+
+
+                    await loginWithRetry(
+
+                        email,
+
+                        password
+
+                    );
+
+
+                    message.textContent =
+                        "Login successful. Opening dashboard...";
+
+
+                    /*
+                        Build dashboard URL.
+                    */
+
+                    let dashboardUrl =
+                        "/admin-dashboard.html";
+
+
+
+                    if (cardId) {
+
+
+                        dashboardUrl +=
+                            "?card=" +
+                            encodeURIComponent(
+                                cardId
+                            );
+
+                    }
+
+
+
+                    console.log(
+                        "GOING TO:",
+                        dashboardUrl
+                    );
+
+
+
+                    /*
+                        Small delay so the
+                        success message can
+                        render before navigation.
+                    */
+
+                    setTimeout(
+
+                        () => {
+
+                            window.location.href =
+                                dashboardUrl;
+
+                        },
+
+                        200
+
+                    );
+
+                }
+
+
+                catch (error) {
+
+
+                    console.error(
+                        "LOGIN ERROR:",
+                        error
+                    );
+
+
+                    /*
+                        Convert Firebase errors
+                        into useful messages.
+                    */
+
+                    if (
+
+                        error.code ===
+                        "auth/network-request-failed"
+
+                    ) {
+
+
+                        message.textContent =
+                            "Unable to connect to Firebase. Please check your internet connection and try again.";
+
+                    }
+
+
+                    else if (
+
+                        error.code ===
+                        "auth/invalid-credential"
+
+                    ) {
+
+
+                        message.textContent =
+                            "Invalid email or password.";
+
+                    }
+
+
+                    else if (
+
+                        error.code ===
+                        "auth/invalid-email"
+
+                    ) {
+
+
+                        message.textContent =
+                            "Please enter a valid email address.";
+
+                    }
+
+
+                    else if (
+
+                        error.code ===
+                        "auth/user-disabled"
+
+                    ) {
+
+
+                        message.textContent =
+                            "This account has been disabled.";
+
+                    }
+
+
+                    else {
+
+
+                        message.textContent =
+                            "Login failed: " +
+                            error.message;
+
+                    }
+
+
+
+                    /*
+                        Allow the user
+                        to try again.
+                    */
+
+                    loginBtn.disabled =
+                        false;
+
+
+                    loginBtn.textContent =
+                        "Login";
+
+                }
+
+            }
+
+        );
+
+    </script>
+
+</body>
+
+</html>

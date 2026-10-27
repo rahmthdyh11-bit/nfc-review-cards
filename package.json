@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "firebase-admin": "^14.4.0",
+    "qrcode": "^1.5.4"
+  }
+}

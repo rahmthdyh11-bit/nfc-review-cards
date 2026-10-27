@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>NFC Review Card</title>
+
+</head>
+
+
+<body>
+
+    <h1 id="message">
+        Checking card...
+    </h1>
+
+
+    <script type="module">
+
+        import {
+            initializeApp
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+
+
+        import {
+            getFirestore,
+            doc,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+
+        const firebaseConfig = {
+
+            apiKey:
+                "AIzaSyDN0CS9x7wVEYYScD1VRks1kr8dClNh11c",
+
+            authDomain:
+                "nfc-review-cards-690a6.firebaseapp.com",
+
+            projectId:
+                "nfc-review-cards-690a6",
+
+            storageBucket:
+                "nfc-review-cards-690a6.firebasestorage.app",
+
+            messagingSenderId:
+                "1042185717113",
+
+            appId:
+                "1:1042185717113:web:e760162cef6fa00da5dba8"
+
+        };
+
+
+        const app =
+            initializeApp(firebaseConfig);
+
+
+        const db =
+            getFirestore(app);
+
+
+        const message =
+            document.getElementById("message");
+
+
+        async function checkCard() {
+
+
+            const cardId =
+                window.location.pathname.substring(1);
+
+
+            console.log(
+                "CARD ID:",
+                cardId
+            );
+
+
+            if (!cardId) {
+
+                message.textContent =
+                    "Invalid Card.";
+
+                return;
+
+            }
+
+
+            try {
+
+
+                const cardRef =
+                    doc(
+                        db,
+                        "cards",
+                        cardId
+                    );
+
+
+                const cardSnap =
+                    await getDoc(cardRef);
+
+
+                if (!cardSnap.exists()) {
+
+                    message.textContent =
+                        "Card not found.";
+
+                    return;
+
+                }
+
+
+                const data =
+                    cardSnap.data();
+
+
+                console.log(
+                    "CARD DATA:",
+                    data
+                );
+
+
+                /*
+                    If the card is active
+                    and has a destination,
+                    redirect directly.
+                */
+
+                if (
+                    data.active === true &&
+                    data.destination
+                ) {
+
+                    window.location.href =
+                        data.destination;
+
+                    return;
+
+                }
+
+
+                /*
+                    Save Card ID in sessionStorage
+                    as a fallback.
+                */
+
+                sessionStorage.setItem(
+                    "selectedCard",
+                    cardId
+                );
+
+
+                console.log(
+                    "CARD ID SAVED:",
+                    cardId
+                );
+
+
+                /*
+                    IMPORTANT:
+
+                    Pass the Card ID through
+                    the URL as well.
+
+                    Example:
+
+                    /admin.html?card=39ZBUL
+                */
+
+
+                message.textContent =
+                    "Preparing admin login...";
+
+
+                /*
+                    TEMPORARY TEST:
+
+                    Wait 2 seconds before
+                    opening admin.html.
+
+                    This gives the initial
+                    Firestore request time to
+                    completely settle before
+                    Firebase Auth initializes.
+                */
+
+                setTimeout(
+
+                    () => {
+
+                        window.location.href =
+                            "/admin.html?card=" +
+                            encodeURIComponent(
+                                cardId
+                            );
+
+                    },
+
+                    2000
+
+                );
+
+            }
+
+
+            catch (error) {
+
+                console.error(
+                    "Card lookup error:",
+                    error
+                );
+
+
+                message.textContent =
+                    "Something went wrong.";
+
+            }
+
+        }
+
+
+        checkCard();
+
+    </script>
+
+</body>
+
+</html>
