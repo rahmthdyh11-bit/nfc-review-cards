@@ -229,19 +229,37 @@
         placeholder="Example: Sharma Restaurant"
     >
 
+    <label for="shopLocation">
 
-    <label for="reviewUrl">
-
-        Google Review URL
+        City, Regency, or District
 
     </label>
 
+    <input
+        type="text"
+        id="shopLocation"
+        placeholder="Example: Bandung, West Java"
+    >
+
+
+    <label for="reviewUrl">
+
+        Google Maps Search Link
+
+    </label>
 
     <input
         type="url"
         id="reviewUrl"
-        placeholder="https://g.page/..."
+        placeholder="Generated from shop name and location"
+        readonly
     >
+
+    <p>
+        This free link opens Google Maps search results for the business.
+        It is not a direct Google review link.
+        <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Preview search</a>
+    </p>
 
 
     <div class="status">
@@ -393,11 +411,45 @@
             "shopName"
         );
 
+    const shopLocation =
+        document.getElementById(
+            "shopLocation"
+        );
+
 
     const reviewUrl =
         document.getElementById(
             "reviewUrl"
         );
+
+    const mapsPreview =
+        document.getElementById(
+            "mapsPreview"
+        );
+
+    function updateMapsSearchLink() {
+        const searchText = [
+            shopName.value.trim(),
+            shopLocation.value.trim()
+        ].filter(Boolean).join(" ");
+
+        if (!searchText) {
+            reviewUrl.value = "";
+            mapsPreview.hidden = true;
+            mapsPreview.removeAttribute("href");
+            return;
+        }
+
+        const mapsUrl = new URL("https://www.google.com/maps/search/");
+        mapsUrl.searchParams.set("api", "1");
+        mapsUrl.searchParams.set("query", searchText);
+        reviewUrl.value = mapsUrl.toString();
+        mapsPreview.href = mapsUrl.toString();
+        mapsPreview.hidden = false;
+    }
+
+    shopName.addEventListener("input", updateMapsSearchLink);
+    shopLocation.addEventListener("input", updateMapsSearchLink);
 
 
     const active =
@@ -777,9 +829,13 @@
             shopName.value =
                 "";
 
+            shopLocation.value =
+                "";
 
             reviewUrl.value =
                 "";
+
+            mapsPreview.hidden = true;
 
 
             active.value =
@@ -834,9 +890,17 @@
                 shopName.value =
                     data.shopName || "";
 
+                shopLocation.value =
+                    data.shopLocation || "";
 
-                reviewUrl.value =
-                    data.destination || "";
+                updateMapsSearchLink();
+
+
+                if (data.destination && !data.shopLocation) {
+                    reviewUrl.value = data.destination;
+                    mapsPreview.href = data.destination;
+                    mapsPreview.hidden = false;
+                }
 
 
                 active.value =
@@ -911,6 +975,9 @@
             const shop =
                 shopName.value.trim();
 
+            const location =
+                shopLocation.value.trim();
+
 
             const url =
                 reviewUrl.value.trim();
@@ -949,12 +1016,19 @@
 
             }
 
+            if (!location) {
+                message.textContent =
+                    "Please enter the city, regency, or district.";
+
+                return;
+            }
+
 
             if (!url) {
 
 
                 message.textContent =
-                    "Please enter the Google Review URL.";
+                    "Enter a shop name and location to generate the Google Maps search link.";
 
 
                 return;
@@ -984,6 +1058,8 @@
                     {
 
                         shopName: shop,
+
+                        shopLocation: location,
 
                         destination: url,
 
