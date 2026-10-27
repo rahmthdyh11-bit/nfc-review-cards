@@ -123,27 +123,61 @@
         }
 
         function openActivationForm(cardId) {
-            showMessage("Aktivasi kartu", "Isi nama bisnis dan link ulasan Google untuk mengaktifkan kartu ini.");
+            showMessage("Aktivasi kartu", "Isi nama bisnis dan lokasinya. Link pencarian Google Maps akan dibuat otomatis.");
             activation.innerHTML = `
                 <form id="activationForm">
                     <p class="muted">Kode kartu: <strong id="cardCode"></strong></p>
-                    <label for="shopName">Nama bisnis / kota</label>
-                    <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi Jakarta">
-                    <label for="destination">Link ulasan Google</label>
-                    <input id="destination" name="destination" type="url" required inputmode="url" placeholder="https://...">
+                    <label for="shopName">Nama toko / bisnis</label>
+                    <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi">
+                    <label for="shopLocation">Kota, kabupaten, atau kecamatan</label>
+                    <input id="shopLocation" name="shopLocation" type="text" maxlength="100" required autocomplete="address-level2" placeholder="Contoh: Bandung, Jawa Barat">
+                    <label for="destination">Link pencarian Google Maps</label>
+                    <input id="destination" name="destination" type="url" readonly required>
+                    <p class="muted">Link ini membuka hasil pencarian Google Maps berdasarkan nama dan lokasi, bukan langsung ke formulir ulasan. Pastikan hasil pencariannya sesuai dengan toko Anda.</p>
+                    <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Pratinjau hasil pencarian</a>
                     <button id="activateButton" type="submit">Aktifkan kartu</button>
                 </form>
             `;
             document.getElementById("cardCode").textContent = cardId;
 
             const form = document.getElementById("activationForm");
+            const shopNameInput = document.getElementById("shopName");
+            const shopLocationInput = document.getElementById("shopLocation");
+            const destinationInput = document.getElementById("destination");
+            const mapsPreview = document.getElementById("mapsPreview");
             const button = document.getElementById("activateButton");
+
+            function updateMapsSearchLink() {
+                const searchText = [
+                    shopNameInput.value.trim(),
+                    shopLocationInput.value.trim()
+                ].filter(Boolean).join(" ");
+
+                if (!searchText) {
+                    destinationInput.value = "";
+                    mapsPreview.hidden = true;
+                    mapsPreview.removeAttribute("href");
+                    return;
+                }
+
+                const mapsUrl = new URL("https://www.google.com/maps/search/");
+                mapsUrl.searchParams.set("api", "1");
+                mapsUrl.searchParams.set("query", searchText);
+                destinationInput.value = mapsUrl.toString();
+                mapsPreview.href = mapsUrl.toString();
+                mapsPreview.hidden = false;
+            }
+
+            shopNameInput.addEventListener("input", updateMapsSearchLink);
+            shopLocationInput.addEventListener("input", updateMapsSearchLink);
+
             form.addEventListener("submit", async (event) => {
                 event.preventDefault();
                 message.textContent = "";
 
-                const shop = document.getElementById("shopName").value.trim();
-                const destination = document.getElementById("destination").value.trim();
+                const shop = shopNameInput.value.trim();
+                const shopLocation = shopLocationInput.value.trim();
+                const destination = destinationInput.value.trim();
                 let parsedDestination;
                 try {
                     parsedDestination = new URL(destination);
@@ -152,8 +186,16 @@
                     return;
                 }
 
-                if (!shop || shop.length > 100 || parsedDestination.protocol !== "https:") {
-                    message.textContent = "Isi nama bisnis dan gunakan link aman yang diawali https://.";
+                if (
+                    !shop ||
+                    shop.length > 100 ||
+                    !shopLocation ||
+                    shopLocation.length > 100 ||
+                    parsedDestination.protocol !== "https:" ||
+                    parsedDestination.hostname !== "www.google.com" ||
+                    parsedDestination.pathname !== "/maps/search/"
+                ) {
+                    message.textContent = "Isi nama toko dan lokasi dengan benar untuk membuat link Google Maps.";
                     return;
                 }
 
@@ -175,6 +217,7 @@
 
                     await updateDoc(cardRef, {
                         shopName: shop,
+                        shopLocation,
                         destination,
                         active: true
                     });
