@@ -15,15 +15,20 @@ service cloud.firestore {
              && request.resource.data.shopName is string
              && request.resource.data.shopName.size() >= 2
              && request.resource.data.shopName.size() <= 100
+             && request.resource.data.shopLocation is string
+             && request.resource.data.shopLocation.size() >= 2
+             && request.resource.data.shopLocation.size() <= 100
              && request.resource.data.destination is string
              && request.resource.data.destination.matches('^https://.+')
              && request.resource.data.keys().hasAll([
                'shopName',
+               'shopLocation',
                'destination',
                'active'
              ])
              && request.resource.data.keys().hasOnly([
                'shopName',
+               'shopLocation',
                'destination',
                'active'
              ])
@@ -31,6 +36,7 @@ service cloud.firestore {
                   .affectedKeys()
                   .hasOnly([
                     'shopName',
+                    'shopLocation',
                     'destination',
                     'active'
                   ]);
