@@ -131,6 +131,7 @@
                     <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi">
                     <label for="shopLocation">Kota, kabupaten, atau kecamatan</label>
                     <input id="shopLocation" name="shopLocation" type="text" maxlength="100" required autocomplete="address-level2" placeholder="Contoh: Bandung, Jawa Barat">
+                    <a id="shopSearch" href="#" target="_blank" rel="noopener noreferrer" hidden>Cari toko di Google</a>
                     <label for="destination">Link Google tujuan</label>
                     <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Tempel link Google Search atau link ulasan">
                     <p class="muted">Tempel link yang ingin dibuka ketika kartu dipindai. Link ulasan langsung biasanya membawa pelanggan ke halaman tulis ulasan.</p>
@@ -141,9 +142,30 @@
             document.getElementById("cardCode").textContent = cardId;
 
             const form = document.getElementById("activationForm");
+            const shopNameInput = document.getElementById("shopName");
+            const shopLocationInput = document.getElementById("shopLocation");
+            const shopSearch = document.getElementById("shopSearch");
             const destinationInput = document.getElementById("destination");
             const destinationPreview = document.getElementById("destinationPreview");
             const button = document.getElementById("activateButton");
+
+            function updateShopSearch() {
+                const searchText = [
+                    shopNameInput.value.trim(),
+                    shopLocationInput.value.trim()
+                ].filter(Boolean).join(" ");
+
+                if (!searchText) {
+                    shopSearch.hidden = true;
+                    shopSearch.removeAttribute("href");
+                    return;
+                }
+
+                const searchUrl = new URL("https://www.google.com/search");
+                searchUrl.searchParams.set("q", searchText);
+                shopSearch.href = searchUrl.toString();
+                shopSearch.hidden = false;
+            }
 
             function updateDestinationPreview() {
                 const value = destinationInput.value.trim();
@@ -157,6 +179,8 @@
                 destinationPreview.hidden = false;
             }
 
+            shopNameInput.addEventListener("input", updateShopSearch);
+            shopLocationInput.addEventListener("input", updateShopSearch);
             destinationInput.addEventListener("input", updateDestinationPreview);
 
             form.addEventListener("submit", async (event) => {
