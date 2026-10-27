@@ -123,7 +123,7 @@
         }
 
         function openActivationForm(cardId) {
-            showMessage("Aktivasi kartu", "Isi nama toko dan lokasinya, lalu tempel link ulasan langsung dari Google.");
+            showMessage("Aktivasi kartu", "Isi nama toko dan lokasi. Link pencarian Google akan dibuat otomatis.");
             activation.innerHTML = `
                 <form id="activationForm">
                     <p class="muted">Kode kartu: <strong id="cardCode"></strong></p>
@@ -131,11 +131,10 @@
                     <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi">
                     <label for="shopLocation">Kota, kabupaten, atau kecamatan</label>
                     <input id="shopLocation" name="shopLocation" type="text" maxlength="100" required autocomplete="address-level2" placeholder="Contoh: Bandung, Jawa Barat">
-                    <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Cari toko di Google Maps</a>
-                    <label for="destination">Link ulasan Google langsung</label>
-                    <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Tempel link ulasan dari Google Business Profile">
-                    <p class="muted">Link pencarian atau link berbagi lokasi bukan link ulasan. Ambil link ulasan melalui Google Business Profile → Minta ulasan / Get more reviews, lalu tempel di sini.</p>
-                    <a id="reviewPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Tes link ulasan</a>
+                    <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Cari toko di Google</a>
+                    <label for="destination">Link pencarian Google</label>
+                    <input id="destination" name="destination" type="url" readonly required>
+                    <p class="muted">Setelah kartu diaktifkan, scan akan membuka hasil Google Search di browser. Pilih toko dari hasil pencarian untuk melihat ulasannya. Ini bukan formulir ulasan langsung.</p>
                     <button id="activateButton" type="submit">Aktifkan kartu</button>
                 </form>
             `;
@@ -146,7 +145,6 @@
             const shopLocationInput = document.getElementById("shopLocation");
             const destinationInput = document.getElementById("destination");
             const mapsPreview = document.getElementById("mapsPreview");
-            const reviewPreview = document.getElementById("reviewPreview");
             const button = document.getElementById("activateButton");
 
             function updateMapsSearchLink() {
@@ -156,30 +154,21 @@
                 ].filter(Boolean).join(" ");
 
                 if (!searchText) {
+                    destinationInput.value = "";
                     mapsPreview.hidden = true;
                     mapsPreview.removeAttribute("href");
                     return;
                 }
 
-                const mapsUrl = new URL("https://www.google.com/maps/search/");
-                mapsUrl.searchParams.set("api", "1");
-                mapsUrl.searchParams.set("query", searchText);
-                mapsPreview.href = mapsUrl.toString();
+                const searchUrl = new URL("https://www.google.com/search");
+                searchUrl.searchParams.set("q", searchText);
+                destinationInput.value = searchUrl.toString();
+                mapsPreview.href = searchUrl.toString();
                 mapsPreview.hidden = false;
             }
 
             shopNameInput.addEventListener("input", updateMapsSearchLink);
             shopLocationInput.addEventListener("input", updateMapsSearchLink);
-            destinationInput.addEventListener("input", () => {
-                if (!destinationInput.value.trim()) {
-                    reviewPreview.hidden = true;
-                    reviewPreview.removeAttribute("href");
-                    return;
-                }
-
-                reviewPreview.href = destinationInput.value.trim();
-                reviewPreview.hidden = false;
-            });
 
             form.addEventListener("submit", async (event) => {
                 event.preventDefault();
@@ -192,26 +181,24 @@
                 try {
                     parsedDestination = new URL(destination);
                 } catch {
-                    message.textContent = "Masukkan link ulasan yang valid.";
+                    message.textContent = "Isi nama toko dan lokasi untuk membuat link pencarian Google.";
                     return;
                 }
 
-                const isGoogleReviewLink =
-                    parsedDestination.hostname === "g.page" &&
-                    /^\/r\/[^/]+\/review\/?$/.test(parsedDestination.pathname) ||
-                    parsedDestination.hostname === "search.google.com" &&
-                    parsedDestination.pathname === "/local/writereview" &&
-                    parsedDestination.searchParams.has("placeid");
+                const isGoogleSearchLink =
+                    parsedDestination.protocol === "https:" &&
+                    parsedDestination.hostname === "www.google.com" &&
+                    parsedDestination.pathname === "/search" &&
+                    parsedDestination.searchParams.has("q");
 
                 if (
                     !shop ||
                     shop.length > 100 ||
                     !shopLocation ||
                     shopLocation.length > 100 ||
-                    parsedDestination.protocol !== "https:" ||
-                    !isGoogleReviewLink
+                    !isGoogleSearchLink
                 ) {
-                    message.textContent = "Tempel link ulasan langsung Google (g.page/.../review atau search.google.com/local/writereview).";
+                    message.textContent = "Isi nama toko dan lokasi agar link pencarian Google dibuat otomatis.";
                     return;
                 }
 
@@ -238,7 +225,7 @@
                         active: true
                     });
 
-                    showMessage("Kartu berhasil diaktifkan", "Mengarahkan ke Google Maps...");
+                    showMessage("Kartu berhasil diaktifkan", "Mengarahkan ke hasil pencarian Google...");
                     window.location.replace(destination);
                 } catch (error) {
                     console.error("Card activation failed:", error);
