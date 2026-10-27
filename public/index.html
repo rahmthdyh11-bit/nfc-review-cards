@@ -131,9 +131,9 @@
                     <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi">
                     <label for="shopLocation">Kota, kabupaten, atau kecamatan</label>
                     <input id="shopLocation" name="shopLocation" type="text" maxlength="100" required autocomplete="address-level2" placeholder="Contoh: Bandung, Jawa Barat">
-                    <label for="destination">Link pencarian Google Maps</label>
-                    <input id="destination" name="destination" type="url" readonly required>
-                    <p class="muted">Link ini membuka hasil pencarian Google Maps berdasarkan nama dan lokasi, bukan langsung ke formulir ulasan. Pastikan hasil pencariannya sesuai dengan toko Anda.</p>
+                    <label for="destination">Link Google Maps toko</label>
+                    <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Link akan dibuat otomatis; bisa diganti dengan link toko pilihan Anda">
+                    <p class="muted">Klik pratinjau untuk mencari toko. Di Google Maps, pilih toko yang benar, pilih Bagikan, salin link, lalu tempel di kolom ini. Jika tidak diganti, link pencarian otomatis yang akan digunakan.</p>
                     <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Pratinjau hasil pencarian</a>
                     <button id="activateButton" type="submit">Aktifkan kartu</button>
                 </form>
@@ -170,6 +170,17 @@
 
             shopNameInput.addEventListener("input", updateMapsSearchLink);
             shopLocationInput.addEventListener("input", updateMapsSearchLink);
+            destinationInput.addEventListener("input", () => {
+                if (!destinationInput.value.trim()) {
+                    mapsPreview.hidden = true;
+                    mapsPreview.removeAttribute("href");
+                    return;
+                }
+
+                mapsPreview.href = destinationInput.value.trim();
+                mapsPreview.hidden = false;
+                mapsPreview.textContent = "Pratinjau link toko";
+            });
 
             form.addEventListener("submit", async (event) => {
                 event.preventDefault();
@@ -186,16 +197,25 @@
                     return;
                 }
 
+                const allowedGoogleMapLink =
+                    parsedDestination.hostname === "www.google.com" &&
+                    parsedDestination.pathname.startsWith("/maps/") ||
+                    parsedDestination.hostname === "google.com" &&
+                    parsedDestination.pathname.startsWith("/maps/") ||
+                    parsedDestination.hostname === "maps.app.goo.gl" &&
+                    parsedDestination.pathname.length > 1 ||
+                    parsedDestination.hostname === "g.page" &&
+                    parsedDestination.pathname.length > 1;
+
                 if (
                     !shop ||
                     shop.length > 100 ||
                     !shopLocation ||
                     shopLocation.length > 100 ||
                     parsedDestination.protocol !== "https:" ||
-                    parsedDestination.hostname !== "www.google.com" ||
-                    parsedDestination.pathname !== "/maps/search/"
+                    !allowedGoogleMapLink
                 ) {
-                    message.textContent = "Isi nama toko dan lokasi dengan benar untuk membuat link Google Maps.";
+                    message.textContent = "Masukkan nama dan lokasi toko serta link Google Maps yang valid.";
                     return;
                 }
 
@@ -222,8 +242,8 @@
                         active: true
                     });
 
-                    showMessage("Kartu berhasil diaktifkan", "Pindai atau tap kartu untuk membuka link ulasan.");
-                    activation.replaceChildren();
+                    showMessage("Kartu berhasil diaktifkan", "Mengarahkan ke Google Maps...");
+                    window.location.replace(destination);
                 } catch (error) {
                     console.error("Card activation failed:", error);
                     message.textContent = error.message === "Kartu belum didaftarkan. Hubungi admin."
