@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /cards/{cardId} {
+      // Anyone can read card data for QR/NFC redirects
+      allow read: if true;
+
+      // Only the admin account can modify cards
+      allow write: if request.auth != null
+                   && request.auth.uid == "84LCrlddTOWiCzBlvk2Ns5aNSVy2";
+    }
+  }
+}

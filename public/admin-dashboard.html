@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>NFC Review Cards - Dashboard</title>
+
+
+    <style>
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            max-width: 700px;
+
+            margin: 50px auto;
+
+            padding: 20px;
+
+            background: #f5f5f5;
+
+        }
+
+
+        .container {
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 12px;
+
+        }
+
+
+        h1 {
+
+            margin-bottom: 30px;
+
+        }
+
+
+        label {
+
+            display: block;
+
+            margin-top: 20px;
+
+            margin-bottom: 6px;
+
+            font-weight: bold;
+
+        }
+
+
+        input,
+        select {
+
+            width: 100%;
+
+            padding: 12px;
+
+            box-sizing: border-box;
+
+            border: 1px solid #ccc;
+
+            border-radius: 6px;
+
+        }
+
+
+        button {
+
+            width: 100%;
+
+            padding: 13px;
+
+            margin-top: 25px;
+
+            border: none;
+
+            border-radius: 6px;
+
+            cursor: pointer;
+
+            font-size: 16px;
+
+        }
+
+
+        #saveBtn {
+
+            background: #222;
+
+            color: white;
+
+        }
+
+
+        #logoutBtn {
+
+            background: #ddd;
+
+        }
+
+
+        #message {
+
+            margin-top: 20px;
+
+            font-weight: bold;
+
+        }
+
+
+        .status {
+
+            margin-top: 20px;
+
+        }
+
+
+        .active-section {
+
+            margin-bottom: 30px;
+
+            padding: 20px;
+
+            background: #f7f7f7;
+
+            border-radius: 10px;
+
+        }
+
+
+        .active-section h2 {
+
+            margin-top: 0;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .active-section p {
+
+            margin-top: 0;
+
+            color: #666;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <h1>
+        NFC Review Cards Admin
+    </h1>
+
+
+    <!-- ACTIVE CARDS SECTION -->
+
+    <div class="active-section">
+
+        <h2>
+            Active Cards
+        </h2>
+
+        <p>
+            Select a shop to manage its card.
+        </p>
+
+
+        <select id="activeCardSelect">
+
+            <option value="">
+                Loading active cards...
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <!-- EXISTING CARD SELECT -->
+
+    <label for="cardSelect">
+
+        Select Card
+
+    </label>
+
+
+    <select id="cardSelect">
+
+        <option value="">
+            Loading cards...
+        </option>
+
+    </select>
+
+
+    <label for="shopName">
+
+        Shop Name
+
+    </label>
+
+
+    <input
+        type="text"
+        id="shopName"
+        placeholder="Example: Sharma Restaurant"
+    >
+
+
+    <label for="reviewUrl">
+
+        Google Review URL
+
+    </label>
+
+
+    <input
+        type="url"
+        id="reviewUrl"
+        placeholder="https://g.page/..."
+    >
+
+
+    <div class="status">
+
+
+        <label>
+
+            Card Status
+
+        </label>
+
+
+        <select id="active">
+
+            <option value="true">
+                Active
+            </option>
+
+            <option value="false">
+                Inactive
+            </option>
+
+        </select>
+
+
+    </div>
+
+
+    <button id="saveBtn">
+
+        Save Card
+
+    </button>
+
+
+    <p id="message"></p>
+
+
+    <button id="logoutBtn">
+
+        Logout
+
+    </button>
+
+
+</div>
+
+
+
+<script type="module">
+
+
+    import {
+
+        initializeApp
+
+    } from
+        "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+
+
+    import {
+
+        getAuth,
+
+        onAuthStateChanged,
+
+        signOut
+
+    } from
+        "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+
+    import {
+
+        getFirestore,
+
+        collection,
+
+        getDocs,
+
+        doc,
+
+        getDoc,
+
+        updateDoc
+
+    } from
+        "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+
+
+    // Firebase configuration
+
+    const firebaseConfig = {
+
+        apiKey:
+            "AIzaSyDN0CS9x7wVEYYScD1VRks1kr8dClNh11c",
+
+        authDomain:
+            "nfc-review-cards-690a6.firebaseapp.com",
+
+        projectId:
+            "nfc-review-cards-690a6",
+
+        storageBucket:
+            "nfc-review-cards-690a6.firebasestorage.app",
+
+        messagingSenderId:
+            "1042185717113",
+
+        appId:
+            "1:1042185717113:web:e760162cef6fa00da5dba8"
+
+    };
+
+
+
+    // Initialize Firebase
+
+    const app =
+        initializeApp(firebaseConfig);
+
+
+    const auth =
+        getAuth(app);
+
+
+    const db =
+        getFirestore(app);
+
+
+
+    // Get HTML elements
+
+    const cardSelect =
+        document.getElementById(
+            "cardSelect"
+        );
+
+
+    const activeCardSelect =
+        document.getElementById(
+            "activeCardSelect"
+        );
+
+
+    const shopName =
+        document.getElementById(
+            "shopName"
+        );
+
+
+    const reviewUrl =
+        document.getElementById(
+            "reviewUrl"
+        );
+
+
+    const active =
+        document.getElementById(
+            "active"
+        );
+
+
+    const saveBtn =
+        document.getElementById(
+            "saveBtn"
+        );
+
+
+    const logoutBtn =
+        document.getElementById(
+            "logoutBtn"
+        );
+
+
+    const message =
+        document.getElementById(
+            "message"
+        );
+
+
+
+    // Check authentication
+
+    onAuthStateChanged(
+
+        auth,
+
+        async (user) => {
+
+
+            console.log(
+                "AUTH USER:",
+                user
+            );
+
+
+            if (!user) {
+
+
+                console.log(
+                    "No authenticated user."
+                );
+
+
+                window.location.href =
+                    "/admin.html";
+
+
+                return;
+
+            }
+
+
+            console.log(
+                "User authenticated."
+            );
+
+
+            console.log(
+                "User UID:",
+                user.uid
+            );
+
+
+            console.log(
+                "Loading cards..."
+            );
+
+
+            await loadCards();
+
+        }
+
+    );
+
+
+
+    // Load all cards from Firestore
+
+    async function loadCards() {
+
+
+        console.log(
+            "loadCards() started"
+        );
+
+
+        try {
+
+
+            const cardsSnapshot =
+                await getDocs(
+
+                    collection(
+
+                        db,
+
+                        "cards"
+
+                    )
+
+                );
+
+
+            console.log(
+                "Cards found:",
+                cardsSnapshot.size
+            );
+
+
+            // Clear normal card dropdown
+
+            cardSelect.innerHTML =
+                '<option value="">Select a card</option>';
+
+
+            // Clear active card dropdown
+
+            activeCardSelect.innerHTML =
+                '<option value="">Select an active shop</option>';
+
+
+
+            cardsSnapshot.forEach(
+
+                (card) => {
+
+
+                    console.log(
+                        "Card:",
+                        card.id
+                    );
+
+
+                    const data =
+                        card.data();
+
+
+
+                    // --------------------------------
+                    // NORMAL CARD DROPDOWN
+                    // --------------------------------
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+
+                    option.value =
+                        card.id;
+
+
+                    option.textContent =
+                        card.id;
+
+
+                    cardSelect.appendChild(
+                        option
+                    );
+
+
+
+                    // --------------------------------
+                    // ACTIVE CARDS DROPDOWN
+                    // --------------------------------
+
+                    if (
+                        data.active === true
+                    ) {
+
+
+                        const activeOption =
+                            document.createElement(
+                                "option"
+                            );
+
+
+                        activeOption.value =
+                            card.id;
+
+
+                        const name =
+                            data.shopName ||
+                            "Unnamed Shop";
+
+
+                        activeOption.textContent =
+                            name +
+                            " — " +
+                            card.id;
+
+
+                        activeCardSelect.appendChild(
+                            activeOption
+                        );
+
+                    }
+
+                }
+
+            );
+
+
+            console.log(
+                "Cards added to dropdowns."
+            );
+
+
+
+            // Read Card ID from URL
+
+            const urlParams =
+                new URLSearchParams(
+
+                    window.location.search
+
+                );
+
+
+            const cardId =
+                urlParams.get("card");
+
+
+            console.log(
+                "Card ID from URL:",
+                cardId
+            );
+
+
+
+            // Automatically select card
+
+            if (cardId) {
+
+
+                console.log(
+                    "Trying to select:",
+                    cardId
+                );
+
+
+                cardSelect.value =
+                    cardId;
+
+
+                console.log(
+                    "Dropdown value after selection:",
+                    cardSelect.value
+                );
+
+
+                if (
+
+                    cardSelect.value ===
+                    cardId
+
+                ) {
+
+
+                    console.log(
+                        "Card selected successfully:",
+                        cardId
+                    );
+
+
+                    await loadSelectedCard(
+                        cardId
+                    );
+
+
+                } else {
+
+
+                    console.log(
+                        "Could not select card:",
+                        cardId
+                    );
+
+
+                    message.textContent =
+                        "Card not found.";
+
+                }
+
+            }
+
+
+        } catch (error) {
+
+
+            console.error(
+                "Error loading cards:",
+                error
+            );
+
+
+            message.textContent =
+                "Error loading cards: " +
+                error.message;
+
+        }
+
+    }
+
+
+
+    // --------------------------------
+    // ACTIVE CARD SELECTION
+    // --------------------------------
+
+    activeCardSelect.addEventListener(
+
+        "change",
+
+        async () => {
+
+
+            const cardId =
+                activeCardSelect.value;
+
+
+            console.log(
+                "Active card selected:",
+                cardId
+            );
+
+
+            if (!cardId) {
+
+                return;
+
+            }
+
+
+            // Keep the existing card dropdown
+            // synchronized
+
+            cardSelect.value =
+                cardId;
+
+
+            await loadSelectedCard(
+                cardId
+            );
+
+        }
+
+    );
+
+
+
+    // Load selected card data
+
+    async function loadSelectedCard(
+
+        cardId
+
+    ) {
+
+
+        console.log(
+            "Loading selected card:",
+            cardId
+        );
+
+
+        if (!cardId) {
+
+
+            shopName.value =
+                "";
+
+
+            reviewUrl.value =
+                "";
+
+
+            active.value =
+                "false";
+
+
+            return;
+
+        }
+
+
+        try {
+
+
+            const cardRef =
+                doc(
+
+                    db,
+
+                    "cards",
+
+                    cardId
+
+                );
+
+
+            const cardSnapshot =
+                await getDoc(
+
+                    cardRef
+
+                );
+
+
+            if (
+
+                cardSnapshot.exists()
+
+            ) {
+
+
+                const data =
+                    cardSnapshot.data();
+
+
+                console.log(
+                    "Card data:",
+                    data
+                );
+
+
+                shopName.value =
+                    data.shopName || "";
+
+
+                reviewUrl.value =
+                    data.destination || "";
+
+
+                active.value =
+                    data.active
+                        ? "true"
+                        : "false";
+
+            }
+
+
+        } catch (error) {
+
+
+            console.error(
+                "Error loading selected card:",
+                error
+            );
+
+
+            message.textContent =
+                "Error loading card: " +
+                error.message;
+
+        }
+
+    }
+
+
+
+    // When a card is selected manually
+
+    cardSelect.addEventListener(
+
+        "change",
+
+        async () => {
+
+
+            const cardId =
+                cardSelect.value;
+
+
+            console.log(
+                "Selected card:",
+                cardId
+            );
+
+
+            await loadSelectedCard(
+                cardId
+            );
+
+        }
+
+    );
+
+
+
+    // Save card
+
+    saveBtn.addEventListener(
+
+        "click",
+
+        async () => {
+
+
+            const cardId =
+                cardSelect.value;
+
+
+            const shop =
+                shopName.value.trim();
+
+
+            const url =
+                reviewUrl.value.trim();
+
+
+            const isActive =
+                active.value === "true";
+
+
+            console.log(
+                "Saving card:",
+                cardId
+            );
+
+
+            if (!cardId) {
+
+
+                message.textContent =
+                    "Please select a card.";
+
+
+                return;
+
+            }
+
+
+            if (!shop) {
+
+
+                message.textContent =
+                    "Please enter the shop name.";
+
+
+                return;
+
+            }
+
+
+            if (!url) {
+
+
+                message.textContent =
+                    "Please enter the Google Review URL.";
+
+
+                return;
+
+            }
+
+
+            try {
+
+
+                const cardRef =
+                    doc(
+
+                        db,
+
+                        "cards",
+
+                        cardId
+
+                    );
+
+
+                await updateDoc(
+
+                    cardRef,
+
+                    {
+
+                        shopName: shop,
+
+                        destination: url,
+
+                        active: isActive
+
+                    }
+
+                );
+
+
+                console.log(
+                    "Card saved successfully."
+                );
+
+
+                message.textContent =
+                    "Card saved successfully!";
+
+
+                // Reload both dropdowns so that
+                // changes in shop name/status
+                // appear immediately.
+
+                await loadCards();
+
+
+                // Restore the card we just saved.
+
+                cardSelect.value =
+                    cardId;
+
+
+                activeCardSelect.value =
+                    cardId;
+
+
+                await loadSelectedCard(
+                    cardId
+                );
+
+
+            } catch (error) {
+
+
+                console.error(
+                    "Error saving card:",
+                    error
+                );
+
+
+                message.textContent =
+                    "Error saving card: " +
+                    error.message;
+
+            }
+
+        }
+
+    );
+
+
+
+    // Logout
+
+    logoutBtn.addEventListener(
+
+        "click",
+
+        async () => {
+
+
+            await signOut(
+                auth
+            );
+
+
+            window.location.href =
+                "/admin.html";
+
+        }
+
+    );
+
+
+</script>
+
+
+</body>
+
+</html>
