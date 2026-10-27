@@ -244,21 +244,19 @@
 
     <label for="reviewUrl">
 
-        Google Search Link
+        Google Destination Link
 
     </label>
 
     <input
         type="url"
         id="reviewUrl"
-        placeholder="Generated from shop name and location"
-        readonly
+        placeholder="Paste the Google link to open when the card is scanned"
     >
 
     <p>
-        This free link opens Google Search results in the browser, not Google Maps.
-        Choose the correct business in the results to view its reviews.
-        <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Preview search</a>
+        Paste the Google Search, Maps, or direct review link to use for this card.
+        <a id="mapsPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Preview link</a>
     </p>
 
 
@@ -427,28 +425,19 @@
             "mapsPreview"
         );
 
-    function updateMapsSearchLink() {
-        const searchText = [
-            shopName.value.trim(),
-            shopLocation.value.trim()
-        ].filter(Boolean).join(" ");
-
-        if (!searchText) {
-            reviewUrl.value = "";
+    function updateDestinationPreview() {
+        const destination = reviewUrl.value.trim();
+        if (!destination) {
             mapsPreview.hidden = true;
             mapsPreview.removeAttribute("href");
             return;
         }
 
-        const searchUrl = new URL("https://www.google.com/search");
-        searchUrl.searchParams.set("q", searchText);
-        reviewUrl.value = searchUrl.toString();
-        mapsPreview.href = searchUrl.toString();
+        mapsPreview.href = destination;
         mapsPreview.hidden = false;
     }
 
-    shopName.addEventListener("input", updateMapsSearchLink);
-    shopLocation.addEventListener("input", updateMapsSearchLink);
+    reviewUrl.addEventListener("input", updateDestinationPreview);
 
 
     const active =
@@ -892,14 +881,10 @@
                 shopLocation.value =
                     data.shopLocation || "";
 
-                updateMapsSearchLink();
+                reviewUrl.value =
+                    data.destination || "";
 
-
-                if (data.destination && !data.shopLocation) {
-                    reviewUrl.value = data.destination;
-                    mapsPreview.href = data.destination;
-                    mapsPreview.hidden = false;
-                }
+                updateDestinationPreview();
 
 
                 active.value =
@@ -1027,7 +1012,7 @@
 
 
                 message.textContent =
-                    "Enter a shop name and location to generate the Google Search link.";
+                    "Enter the Google destination link for this card.";
 
 
                 return;
