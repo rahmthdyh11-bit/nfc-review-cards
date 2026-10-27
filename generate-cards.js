@@ -32,7 +32,10 @@ async function generateQRs() {
 
     for (const cardId of cardIds) {
 
-        const url = BASE_URL + cardId;
+        const url =
+            BASE_URL +
+            "aktivasi?code=" +
+            encodeURIComponent(cardId);
         const filePath = path.join(outputDir, `${cardId}.png`);
 
         await QRCode.toFile(filePath, url, {
