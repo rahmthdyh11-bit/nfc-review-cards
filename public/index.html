@@ -239,9 +239,11 @@
             margin-top: 10px;
         }
 
-        #destinationPreview {
-            display: inline-block;
-            margin-top: 10px;
+        #destinationPreview:not([hidden]) {
+            display: block;
+            width: fit-content;
+            margin-top: 14px;
+            padding: 4px 0;
         }
     </style>
 </head>
@@ -313,7 +315,7 @@
                             <label for="businessMapsInput">Tempel link Google Maps bisnis</label>
                             <input id="businessMapsInput" type="url" maxlength="2048" inputmode="url" placeholder="https://maps.app.goo.gl/...">
                             <button id="resolveBusinessMaps" class="business-process-button" type="button">Proses Link Maps</button>
-                            <p id="businessMapsStatus" class="muted business-search-status" role="status" aria-live="polite">Tempel link Google Maps untuk mencari bisnis dan membuat link review.</p>
+                            <p id="businessMapsStatus" class="muted business-search-status" role="status" aria-live="polite">Tempel link Google Maps Review.</p>
                             <div id="resolvedBusiness" class="business-selected">
                                 <strong id="resolvedBusinessName"></strong>
                                 <p id="resolvedBusinessAddress" class="muted"></p>
@@ -373,9 +375,31 @@
                 });
             });
 
+            function isAllowedGoogleLink(value) {
+                let url;
+                try {
+                    url = new URL(value);
+                } catch {
+                    return false;
+                }
+
+                return url.protocol === "https:" &&
+                    (
+                        ((url.hostname === "www.google.com" ||
+                            url.hostname === "google.com") &&
+                            url.pathname === "/search") ||
+                        (url.hostname === "search.google.com" &&
+                            url.pathname === "/local/writereview") ||
+                        (url.hostname === "g.page" &&
+                            /^\/r\/[^/]+\/review\/?$/.test(url.pathname)) ||
+                        (url.hostname === "maps.app.goo.gl" &&
+                            url.pathname.length > 1)
+                    );
+            }
+
             function updateDestinationPreview() {
                 const value = destinationInput.value.trim();
-                if (!value) {
+                if (!isAllowedGoogleLink(value)) {
                     destinationPreview.hidden = true;
                     destinationPreview.removeAttribute("href");
                     return;
@@ -628,33 +652,12 @@
                 const shop = document.getElementById("shopName").value.trim();
                 const activationPassword = activationPasswordInput.value;
                 const destination = destinationInput.value.trim();
-                let parsedDestination;
-                try {
-                    parsedDestination = new URL(destination);
-                } catch {
-                    message.textContent = "Tempel link Google yang valid.";
-                    return;
-                }
-
-                const isAllowedGoogleLink =
-                    parsedDestination.protocol === "https:" &&
-                    (
-                        ((parsedDestination.hostname === "www.google.com" ||
-                            parsedDestination.hostname === "google.com") &&
-                            parsedDestination.pathname === "/search") ||
-                        (parsedDestination.hostname === "search.google.com" &&
-                            parsedDestination.pathname === "/local/writereview") ||
-                        (parsedDestination.hostname === "g.page" &&
-                            /^\/r\/[^/]+\/review\/?$/.test(parsedDestination.pathname)) ||
-                        (parsedDestination.hostname === "maps.app.goo.gl" &&
-                            parsedDestination.pathname.length > 1)
-                    );
 
                 if (
                     !shop ||
                     shop.length > 100 ||
                     activationPassword.length < 12 ||
-                    !isAllowedGoogleLink
+                    !isAllowedGoogleLink(destination)
                 ) {
                     message.textContent = "Periksa kembali data aktivasi. Pastikan nama toko, password, dan link Google valid.";
                     return;
