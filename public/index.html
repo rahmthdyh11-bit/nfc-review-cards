@@ -62,11 +62,22 @@
             padding: 13px;
             border: 0;
             border-radius: 8px;
-            background: #1459d9;
+            background: #f97316;
             color: white;
             font: inherit;
             font-weight: 700;
             cursor: pointer;
+        }
+
+        button:hover:not(:disabled) {
+            background: #ea580c;
+        }
+
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible {
+            outline: 3px solid rgb(249 115 22 / 35%);
+            outline-offset: 2px;
         }
 
         button:disabled {
@@ -81,6 +92,122 @@
 
         .muted {
             color: #596579;
+        }
+
+        .business-search {
+            margin-top: 16px;
+            padding: 14px;
+            border: 1px solid #dbe3ef;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+
+        .business-search label {
+            margin-top: 0;
+        }
+
+        .business-search input {
+            margin-bottom: 0;
+        }
+
+        .business-search-status {
+            margin: 9px 0 0;
+            font-size: 13px;
+        }
+
+        .business-results {
+            display: none;
+            max-height: 240px;
+            overflow-y: auto;
+            margin-top: 8px;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .business-result {
+            display: block;
+            width: 100%;
+            margin: 0;
+            padding: 12px;
+            border-bottom: 1px solid #e8edf4;
+            border-radius: 0;
+            background: #fff;
+            color: #172033;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .business-result:last-child {
+            border-bottom: 0;
+        }
+
+        .business-result:hover,
+        .business-result:focus-visible {
+            background: #fff7ed;
+        }
+
+        .business-result strong,
+        .business-result small {
+            display: block;
+        }
+
+        .business-result small {
+            margin-top: 4px;
+            color: #596579;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        .business-selected {
+            display: none;
+            margin-top: 10px;
+            padding: 12px;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            background: #fff7ed;
+        }
+
+        .business-selected p {
+            margin: 5px 0 0;
+            font-size: 13px;
+        }
+
+        .business-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .business-actions button,
+        .business-actions a {
+            flex: 1;
+            width: auto;
+            margin: 0;
+            padding: 10px;
+            border-radius: 7px;
+            font-size: 13px;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .business-actions a {
+            display: grid;
+            place-items: center;
+            border: 1px solid #cbd2df;
+            background: #fff;
+            color: #172033;
+            font-weight: 700;
+        }
+
+        @media (max-width: 420px) {
+            .business-actions {
+                flex-direction: column;
+            }
+        }
+
+        .business-actions .secondary-button {
+            background: #ea580c;
         }
     </style>
 </head>
@@ -130,6 +257,21 @@
                     <input id="activationPassword" name="activationPassword" type="password" required autocomplete="current-password" maxlength="128" placeholder="Masukkan password aktivasi">
                     <label for="shopName">Nama toko / bisnis</label>
                     <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi">
+                    <div class="business-search">
+                        <label for="businessSearch">Cari dan pilih bisnis</label>
+                        <input id="businessSearch" type="search" maxlength="120" autocomplete="off" placeholder="Ketik minimal 2 karakter">
+                        <p id="businessSearchStatus" class="muted business-search-status" role="status" aria-live="polite">Cari nama bisnis, lalu pilih hasil yang benar.</p>
+                        <div id="businessResults" class="business-results" role="listbox" aria-label="Hasil pencarian bisnis"></div>
+                        <div id="businessSelected" class="business-selected">
+                            <strong id="businessSelectedName"></strong>
+                            <p id="businessSelectedAddress" class="muted"></p>
+                            <div class="business-actions">
+                                <a id="openBusinessMaps" href="#" target="_blank" rel="noopener noreferrer">Buka di Maps</a>
+                                <button id="copyBusinessReview" class="secondary-button" type="button">Salin Link Review Google</button>
+                            </div>
+                            <p id="businessCopyMessage" class="muted business-search-status" role="status" aria-live="polite"></p>
+                        </div>
+                    </div>
                     <label for="shopLocation">Kota, kabupaten, atau kecamatan</label>
                     <input id="shopLocation" name="shopLocation" type="text" maxlength="100" required autocomplete="address-level2" placeholder="Contoh: Bandung, Jawa Barat">
                     <a id="shopSearch" href="#" target="_blank" rel="noopener noreferrer" hidden>Cari toko di Google</a>
@@ -146,10 +288,21 @@
             const shopNameInput = document.getElementById("shopName");
             const shopLocationInput = document.getElementById("shopLocation");
             const activationPasswordInput = document.getElementById("activationPassword");
+            const businessSearchInput = document.getElementById("businessSearch");
+            const businessSearchStatus = document.getElementById("businessSearchStatus");
+            const businessResults = document.getElementById("businessResults");
+            const businessSelected = document.getElementById("businessSelected");
+            const businessSelectedName = document.getElementById("businessSelectedName");
+            const businessSelectedAddress = document.getElementById("businessSelectedAddress");
+            const openBusinessMaps = document.getElementById("openBusinessMaps");
+            const businessCopyMessage = document.getElementById("businessCopyMessage");
             const shopSearch = document.getElementById("shopSearch");
             const destinationInput = document.getElementById("destination");
             const destinationPreview = document.getElementById("destinationPreview");
             const button = document.getElementById("activateButton");
+            let businessSearchTimer;
+            let businessSearchController;
+            let selectedReviewUrl = "";
 
             function updateShopSearch() {
                 const searchText = [
@@ -181,6 +334,156 @@
                 destinationPreview.hidden = false;
             }
 
+            function makeMapsSearchUrl(item) {
+                const mapsUrl = new URL("https://www.google.com/maps/search/");
+                mapsUrl.searchParams.set("api", "1");
+                mapsUrl.searchParams.set("query", item.name || "Business");
+                const placeId = item.placeId || item.place_id || item.id;
+                if (placeId) {
+                    mapsUrl.searchParams.set("query_place_id", placeId);
+                }
+                return mapsUrl.toString();
+            }
+
+            function makeReviewUrl(placeId) {
+                const reviewUrl = new URL("https://search.google.com/local/writereview");
+                reviewUrl.searchParams.set("placeid", placeId);
+                return reviewUrl.toString();
+            }
+
+            function clearBusinessSelection() {
+                selectedReviewUrl = "";
+                businessSelected.hidden = true;
+                businessSelected.style.display = "none";
+                businessCopyMessage.textContent = "";
+                openBusinessMaps.removeAttribute("href");
+            }
+
+            async function copyBusinessReview() {
+                if (!selectedReviewUrl) {
+                    businessCopyMessage.textContent = "Pilih bisnis yang memiliki Place ID terlebih dahulu.";
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(selectedReviewUrl);
+                    businessCopyMessage.textContent = "Link review berhasil disalin. Tempelkan ke kolom Link Google tujuan.";
+                } catch (error) {
+                    const copyArea = document.createElement("textarea");
+                    copyArea.value = selectedReviewUrl;
+                    copyArea.style.position = "fixed";
+                    copyArea.style.opacity = "0";
+                    document.body.appendChild(copyArea);
+                    copyArea.select();
+                    const copied = document.execCommand("copy");
+                    copyArea.remove();
+                    businessCopyMessage.textContent = copied
+                        ? "Link review berhasil disalin. Tempelkan ke kolom Link Google tujuan."
+                        : "Gagal menyalin. Salin link secara manual: " + selectedReviewUrl;
+                }
+            }
+
+            function showSelectedBusiness(item) {
+                const placeId = item.placeId || item.place_id || item.id || "";
+                if (!placeId) {
+                    businessSearchStatus.textContent = "Place ID tidak tersedia untuk bisnis ini. Pilih hasil lain.";
+                    return;
+                }
+
+                shopNameInput.value = item.name || "";
+                selectedReviewUrl = makeReviewUrl(placeId);
+                businessSelectedName.textContent = item.name || "Nama bisnis tidak tersedia";
+                businessSelectedAddress.textContent = item.address || "Alamat tidak tersedia";
+                openBusinessMaps.href = makeMapsSearchUrl(item);
+                businessResults.replaceChildren();
+                businessResults.style.display = "none";
+                businessSelected.hidden = false;
+                businessSelected.style.display = "block";
+                businessSearchStatus.textContent = "Bisnis dipilih. Salin link review, lalu tempelkan ke kolom Link Google tujuan.";
+                updateShopSearch();
+            }
+
+            async function searchBusinesses(query) {
+                if (businessSearchController) {
+                    businessSearchController.abort();
+                }
+                businessSearchController = new AbortController();
+                const controller = businessSearchController;
+                businessSearchStatus.textContent = "Mencari bisnis...";
+                businessResults.replaceChildren();
+                businessResults.style.display = "none";
+
+                try {
+                    const response = await fetch(
+                        "/api/business-search?q=" + encodeURIComponent(query),
+                        { signal: controller.signal }
+                    );
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || "Pencarian bisnis gagal.");
+                    }
+                    if (controller !== businessSearchController) {
+                        return;
+                    }
+                    if (!Array.isArray(data) || data.length === 0) {
+                        businessSearchStatus.textContent = "Bisnis tidak ditemukan.";
+                        return;
+                    }
+
+                    businessSearchStatus.textContent = "Pilih bisnis yang benar:";
+                    businessResults.style.display = "block";
+                    data.forEach(item => {
+                        const result = document.createElement("button");
+                        result.type = "button";
+                        result.className = "business-result";
+                        result.setAttribute("role", "option");
+                        const name = document.createElement("strong");
+                        name.textContent = item.name || "Nama tidak tersedia";
+                        const address = document.createElement("small");
+                        address.textContent = item.address || "Alamat tidak tersedia";
+                        result.append(name, address);
+                        result.addEventListener("click", () => showSelectedBusiness(item));
+                        businessResults.appendChild(result);
+                    });
+                } catch (error) {
+                    if (error.name === "AbortError") {
+                        return;
+                    }
+                    console.error("Business search failed:", error);
+                    businessSearchStatus.textContent = error.message || "Pencarian gagal. Coba lagi.";
+                }
+            }
+
+            function scheduleBusinessSearch() {
+                clearTimeout(businessSearchTimer);
+                if (businessSearchController) {
+                    businessSearchController.abort();
+                }
+                clearBusinessSelection();
+                businessResults.replaceChildren();
+                businessResults.style.display = "none";
+
+                const query = [
+                    businessSearchInput.value.trim(),
+                    shopLocationInput.value.trim()
+                ].filter(Boolean).join(" ");
+
+                if (query.length < 2) {
+                    businessSearchStatus.textContent = "Ketik minimal 2 karakter untuk mencari.";
+                    return;
+                }
+                if (query.length > 120) {
+                    businessSearchStatus.textContent = "Pencarian maksimal 120 karakter.";
+                    return;
+                }
+
+                businessSearchTimer = setTimeout(() => searchBusinesses(query), 350);
+            }
+
+            document.getElementById("copyBusinessReview")
+                .addEventListener("click", copyBusinessReview);
+            businessSearchInput.addEventListener("input", scheduleBusinessSearch);
+            shopLocationInput.addEventListener("input", scheduleBusinessSearch);
             shopNameInput.addEventListener("input", updateShopSearch);
             shopLocationInput.addEventListener("input", updateShopSearch);
             destinationInput.addEventListener("input", updateDestinationPreview);
