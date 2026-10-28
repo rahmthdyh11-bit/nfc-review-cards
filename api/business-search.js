@@ -1,4 +1,5 @@
 const MAX_QUERY_LENGTH = 120;
+const MAX_MAPS_URL_LENGTH = 2048;
 const MAX_RESULTS = 20;
 const UPSTREAM_TIMEOUT_MS = 8000;
 
@@ -55,22 +56,62 @@ function normalizeResults(data) {
         .filter(Boolean);
 }
 
+function isAllowedMapsUrl(value) {
+    let url;
+    try {
+        url = new URL(value);
+    } catch {
+        return false;
+    }
+
+    return (
+        url.protocol === "https:" &&
+        !url.username &&
+        !url.password &&
+        !url.port &&
+        (
+            url.hostname === "maps.app.goo.gl" ||
+            url.hostname === "maps.google.com" ||
+            ((url.hostname === "www.google.com" || url.hostname === "google.com") &&
+                url.pathname.startsWith("/maps"))
+        )
+    );
+}
+
 module.exports = async function handler(req, res) {
     if (req.method !== "GET") {
         res.setHeader("Allow", "GET");
         return sendJson(res, 405, { error: "Metode tidak diizinkan." });
     }
 
+    const action = typeof req.query?.action === "string" ? req.query.action : "search";
+    if (action !== "search" && action !== "resolveMapsLink") {
+        return sendJson(res, 400, { error: "Jenis pencarian tidak valid." });
+    }
+
     const query = typeof req.query?.q === "string" ? req.query.q.trim() : "";
-    if (query.length < 2 || query.length > MAX_QUERY_LENGTH) {
-        return sendJson(res, 400, { error: "Masukkan nama bisnis 2-120 karakter." });
+    const mapsUrl = typeof req.query?.url === "string" ? req.query.url.trim() : "";
+    if (
+        (action === "search" && (query.length < 2 || query.length > MAX_QUERY_LENGTH)) ||
+        (action === "resolveMapsLink" &&
+            (mapsUrl.length > MAX_MAPS_URL_LENGTH || !isAllowedMapsUrl(mapsUrl)))
+    ) {
+        return sendJson(res, 400, {
+            error: action === "search"
+                ? "Masukkan nama bisnis 2-120 karakter."
+                : "Masukkan link Google Maps yang valid."
+        });
     }
 
     let timeout;
     try {
         const upstreamUrl = getUpstreamUrl();
-        upstreamUrl.searchParams.set("action", "search");
-        upstreamUrl.searchParams.set("q", query);
+        upstreamUrl.searchParams.set("action", action);
+        if (action === "search") {
+            upstreamUrl.searchParams.set("q", query);
+        } else {
+            upstreamUrl.searchParams.set("url", mapsUrl);
+        }
 
         const controller = new AbortController();
         timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
@@ -80,7 +121,15 @@ module.exports = async function handler(req, res) {
         }
 
         const data = await response.json();
-        return sendJson(res, 200, normalizeResults(data));
+        if (action === "search") {
+            return sendJson(res, 200, normalizeResults(data));
+        }
+
+        const candidates = Array.isArray(data) ? data : [data];
+        const result = candidates
+            .map(normalizeBusiness)
+            .find(item => item && (item.placeId || item.place_id || item.id));
+        return sendJson(res, 200, result || {});
     } catch (error) {
         console.error("Business search API failed:", error);
         const isTimeout = error.name === "AbortError";
