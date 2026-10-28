@@ -320,11 +320,8 @@
                             </div>
                         </section>
                     </div>
-                    <label for="shopLocation">Kota, kabupaten, atau kecamatan</label>
-                    <input id="shopLocation" name="shopLocation" type="text" maxlength="100" required autocomplete="address-level2" placeholder="Contoh: Bandung, Jawa Barat">
                     <label for="destination">Link Google tujuan</label>
                     <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Tempel link Google Search atau link ulasan">
-                    <p class="muted">Link ini akan dibuka saat kartu dipindai. Untuk link review, salin dari hasil pencarian di atas.</p>
                     <a id="destinationPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Pratinjau link</a>
                     <button id="activateButton" type="submit">Aktifkan kartu</button>
                 </form>
@@ -333,7 +330,6 @@
 
             const form = document.getElementById("activationForm");
             const shopNameInput = document.getElementById("shopName");
-            const shopLocationInput = document.getElementById("shopLocation");
             const activationPasswordInput = document.getElementById("activationPassword");
             const businessSearchStatus = document.getElementById("businessSearchStatus");
             const businessResults = document.getElementById("businessResults");
@@ -537,14 +533,12 @@
                 businessResults.style.display = "none";
 
                 const businessName = shopNameInput.value.trim();
-                const location = shopLocationInput.value.trim();
                 if (businessName.length < 2) {
                     businessSearchStatus.textContent = "Ketik minimal 2 karakter untuk mencari.";
                     return;
                 }
 
-                const queryWithLocation = [businessName, location].filter(Boolean).join(" ");
-                const query = queryWithLocation.length <= 120 ? queryWithLocation : businessName;
+                const query = businessName.slice(0, 120);
 
                 businessSearchTimer = setTimeout(() => searchBusinesses(query), 350);
             }
@@ -620,7 +614,6 @@
             document.getElementById("resolveBusinessMaps")
                 .addEventListener("click", resolveBusinessMapsLink);
             shopNameInput.addEventListener("input", scheduleBusinessSearch);
-            shopLocationInput.addEventListener("input", scheduleBusinessSearch);
             destinationInput.addEventListener("input", updateDestinationPreview);
 
             form.addEventListener("submit", async (event) => {
@@ -628,7 +621,6 @@
                 message.textContent = "";
 
                 const shop = document.getElementById("shopName").value.trim();
-                const shopLocation = document.getElementById("shopLocation").value.trim();
                 const activationPassword = activationPasswordInput.value;
                 const destination = destinationInput.value.trim();
                 let parsedDestination;
@@ -656,12 +648,10 @@
                 if (
                     !shop ||
                     shop.length > 100 ||
-                    !shopLocation ||
-                    shopLocation.length > 100 ||
                     activationPassword.length < 12 ||
                     !isAllowedGoogleLink
                 ) {
-                    message.textContent = "Masukkan password aktivasi dan gunakan link HTTPS dari Google Search, Google review, atau Google Maps.";
+                    message.textContent = "Periksa kembali data aktivasi. Pastikan nama toko, password, dan link Google valid.";
                     return;
                 }
 
@@ -677,7 +667,6 @@
                             cardId,
                             activationPassword,
                             shopName: shop,
-                            shopLocation,
                             destination
                         })
                     });
@@ -719,7 +708,7 @@
                 showMessage("Kartu perlu bantuan admin", "Silakan hubungi admin untuk memeriksa status kartu.");
             } catch (error) {
                 console.error("Activation card lookup failed:", error);
-                showMessage("Tidak dapat memeriksa kartu", "Periksa koneksi atau aturan Firestore, lalu coba lagi.");
+                showMessage("Tidak dapat memeriksa kartu", "Periksa koneksi lalu coba lagi.");
             }
         }
 
@@ -748,7 +737,7 @@
                 window.location.replace(target.toString());
             } catch (error) {
                 console.error("Card lookup failed:", error);
-                showMessage("Tidak dapat memeriksa kartu", "Periksa koneksi atau aturan Firestore, lalu coba lagi.");
+                showMessage("Tidak dapat memeriksa kartu", "Periksa koneksi lalu coba lagi.");
             }
         }
 
