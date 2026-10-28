@@ -23,8 +23,8 @@
         }
 
         main {
-            width: min(100%, 460px);
-            padding: 32px;
+            width: min(100%, 480px);
+            padding: 26px;
             box-sizing: border-box;
             border-radius: 16px;
             background: #fff;
@@ -42,14 +42,14 @@
 
         label {
             display: block;
-            margin-top: 20px;
+            margin-top: 16px;
             font-weight: 700;
         }
 
         input {
             width: 100%;
             box-sizing: border-box;
-            margin-top: 8px;
+            margin-top: 6px;
             padding: 12px;
             border: 1px solid #cbd2df;
             border-radius: 8px;
@@ -95,23 +95,44 @@
         }
 
         .business-search {
-            margin-top: 16px;
-            padding: 14px;
-            border: 1px solid #dbe3ef;
-            border-radius: 10px;
-            background: #f8fafc;
+            margin-top: 12px;
         }
 
-        .business-search label {
-            margin-top: 0;
+        .business-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 9px;
+            background: #f1f3f6;
         }
 
-        .business-search input {
-            margin-bottom: 0;
+        .business-tabs button {
+            flex: 1;
+            width: auto;
+            margin: 0;
+            padding: 9px 8px;
+            border-radius: 6px;
+            background: transparent;
+            color: #596579;
+            font-size: 13px;
+        }
+
+        .business-tabs button.active {
+            background: white;
+            color: #c2410c;
+            box-shadow: 0 1px 3px rgb(23 32 51 / 14%);
+        }
+
+        .business-panel[hidden] {
+            display: none;
+        }
+
+        .business-panel {
+            padding-top: 2px;
         }
 
         .business-search-status {
-            margin: 9px 0 0;
+            margin: 7px 0 0;
             font-size: 13px;
         }
 
@@ -161,10 +182,10 @@
 
         .business-selected {
             display: none;
-            margin-top: 10px;
-            padding: 12px;
+            margin-top: 8px;
+            padding: 10px;
             border: 1px solid #fed7aa;
-            border-radius: 8px;
+            border-radius: 7px;
             background: #fff7ed;
         }
 
@@ -184,7 +205,7 @@
             flex: 1;
             width: auto;
             margin: 0;
-            padding: 10px;
+            padding: 9px;
             border-radius: 7px;
             font-size: 13px;
             text-align: center;
@@ -201,6 +222,10 @@
         }
 
         @media (max-width: 420px) {
+            main {
+                padding: 22px 18px;
+            }
+
             .business-actions {
                 flex-direction: column;
             }
@@ -208,6 +233,10 @@
 
         .business-actions .secondary-button {
             background: #ea580c;
+        }
+
+        .business-process-button {
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -249,7 +278,7 @@
         }
 
         function openActivationForm(cardId) {
-            showMessage("Aktivasi kartu", "Isi nama toko, lokasi, dan tempel link Google yang ingin dibuka saat kartu dipindai.");
+            showMessage("Aktivasi kartu", "Cari bisnis atau tempel link Google Maps, lalu isi data aktivasi.");
             activation.innerHTML = `
                 <form id="activationForm">
                     <p class="muted">Kode kartu: <strong id="cardCode"></strong></p>
@@ -258,26 +287,44 @@
                     <label for="shopName">Nama toko / bisnis</label>
                     <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi">
                     <div class="business-search">
-                        <label for="businessSearch">Cari dan pilih bisnis</label>
-                        <input id="businessSearch" type="search" maxlength="120" autocomplete="off" placeholder="Ketik minimal 2 karakter">
-                        <p id="businessSearchStatus" class="muted business-search-status" role="status" aria-live="polite">Cari nama bisnis, lalu pilih hasil yang benar.</p>
-                        <div id="businessResults" class="business-results" role="listbox" aria-label="Hasil pencarian bisnis"></div>
-                        <div id="businessSelected" class="business-selected">
-                            <strong id="businessSelectedName"></strong>
-                            <p id="businessSelectedAddress" class="muted"></p>
-                            <div class="business-actions">
-                                <a id="openBusinessMaps" href="#" target="_blank" rel="noopener noreferrer">Buka di Maps</a>
-                                <button id="copyBusinessReview" class="secondary-button" type="button">Salin Link Review Google</button>
-                            </div>
-                            <p id="businessCopyMessage" class="muted business-search-status" role="status" aria-live="polite"></p>
+                        <div class="business-tabs" role="tablist" aria-label="Cara mencari bisnis">
+                            <button class="active" type="button" role="tab" aria-selected="true" aria-controls="businessSearchPanel" data-business-target="businessSearchPanel">Cari Nama Bisnis</button>
+                            <button type="button" role="tab" aria-selected="false" aria-controls="businessMapsPanel" data-business-target="businessMapsPanel">Link Google Maps</button>
                         </div>
+                        <section id="businessSearchPanel" class="business-panel">
+                            <p id="businessSearchStatus" class="muted business-search-status" role="status" aria-live="polite">Ketik nama toko di atas untuk mencari dan memilih hasil.</p>
+                            <div id="businessResults" class="business-results" role="listbox" aria-label="Hasil pencarian bisnis"></div>
+                            <div id="businessSelected" class="business-selected">
+                                <strong id="businessSelectedName"></strong>
+                                <p id="businessSelectedAddress" class="muted"></p>
+                                <div class="business-actions">
+                                    <a id="openBusinessMaps" href="#" target="_blank" rel="noopener noreferrer">Buka di Maps</a>
+                                    <button id="copyBusinessReview" class="secondary-button" type="button">Salin Link Review Google</button>
+                                </div>
+                                <p id="businessCopyMessage" class="muted business-search-status" role="status" aria-live="polite"></p>
+                            </div>
+                        </section>
+                        <section id="businessMapsPanel" class="business-panel" hidden>
+                            <label for="businessMapsInput">Tempel link Google Maps bisnis</label>
+                            <input id="businessMapsInput" type="url" maxlength="2048" inputmode="url" placeholder="https://maps.app.goo.gl/...">
+                            <button id="resolveBusinessMaps" class="business-process-button" type="button">Proses Link Maps</button>
+                            <p id="businessMapsStatus" class="muted business-search-status" role="status" aria-live="polite">Tempel link Google Maps untuk mencari bisnis dan membuat link review.</p>
+                            <div id="resolvedBusiness" class="business-selected">
+                                <strong id="resolvedBusinessName"></strong>
+                                <p id="resolvedBusinessAddress" class="muted"></p>
+                                <div class="business-actions">
+                                    <a id="openResolvedBusinessMaps" href="#" target="_blank" rel="noopener noreferrer">Buka Toko</a>
+                                    <button id="copyResolvedBusinessReview" class="secondary-button" type="button">Salin Link Review Google</button>
+                                </div>
+                                <p id="resolvedBusinessCopyMessage" class="muted business-search-status" role="status" aria-live="polite"></p>
+                            </div>
+                        </section>
                     </div>
                     <label for="shopLocation">Kota, kabupaten, atau kecamatan</label>
                     <input id="shopLocation" name="shopLocation" type="text" maxlength="100" required autocomplete="address-level2" placeholder="Contoh: Bandung, Jawa Barat">
-                    <a id="shopSearch" href="#" target="_blank" rel="noopener noreferrer" hidden>Cari toko di Google</a>
                     <label for="destination">Link Google tujuan</label>
                     <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Tempel link Google Search atau link ulasan">
-                    <p class="muted">Tempel link yang ingin dibuka ketika kartu dipindai. Link ulasan langsung biasanya membawa pelanggan ke halaman tulis ulasan.</p>
+                    <p class="muted">Link ini akan dibuka saat kartu dipindai. Untuk link review, salin dari hasil pencarian di atas.</p>
                     <a id="destinationPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Pratinjau link</a>
                     <button id="activateButton" type="submit">Aktifkan kartu</button>
                 </form>
@@ -288,7 +335,6 @@
             const shopNameInput = document.getElementById("shopName");
             const shopLocationInput = document.getElementById("shopLocation");
             const activationPasswordInput = document.getElementById("activationPassword");
-            const businessSearchInput = document.getElementById("businessSearch");
             const businessSearchStatus = document.getElementById("businessSearchStatus");
             const businessResults = document.getElementById("businessResults");
             const businessSelected = document.getElementById("businessSelected");
@@ -296,31 +342,35 @@
             const businessSelectedAddress = document.getElementById("businessSelectedAddress");
             const openBusinessMaps = document.getElementById("openBusinessMaps");
             const businessCopyMessage = document.getElementById("businessCopyMessage");
-            const shopSearch = document.getElementById("shopSearch");
+            const businessMapsInput = document.getElementById("businessMapsInput");
+            const businessMapsStatus = document.getElementById("businessMapsStatus");
+            const resolvedBusiness = document.getElementById("resolvedBusiness");
+            const resolvedBusinessName = document.getElementById("resolvedBusinessName");
+            const resolvedBusinessAddress = document.getElementById("resolvedBusinessAddress");
+            const openResolvedBusinessMaps = document.getElementById("openResolvedBusinessMaps");
+            const resolvedBusinessCopyMessage = document.getElementById("resolvedBusinessCopyMessage");
             const destinationInput = document.getElementById("destination");
             const destinationPreview = document.getElementById("destinationPreview");
             const button = document.getElementById("activateButton");
             let businessSearchTimer;
             let businessSearchController;
             let selectedReviewUrl = "";
+            let resolvedReviewUrl = "";
 
-            function updateShopSearch() {
-                const searchText = [
-                    shopNameInput.value.trim(),
-                    shopLocationInput.value.trim()
-                ].filter(Boolean).join(" ");
-
-                if (!searchText) {
-                    shopSearch.hidden = true;
-                    shopSearch.removeAttribute("href");
-                    return;
-                }
-
-                const searchUrl = new URL("https://www.google.com/search");
-                searchUrl.searchParams.set("q", searchText);
-                shopSearch.href = searchUrl.toString();
-                shopSearch.hidden = false;
-            }
+            document.querySelectorAll(".business-tabs [data-business-target]").forEach(tab => {
+                tab.addEventListener("click", () => {
+                    document.querySelectorAll(".business-tabs [data-business-target]").forEach(item => {
+                        item.classList.remove("active");
+                        item.setAttribute("aria-selected", "false");
+                    });
+                    document.querySelectorAll(".business-panel").forEach(panel => {
+                        panel.hidden = true;
+                    });
+                    tab.classList.add("active");
+                    tab.setAttribute("aria-selected", "true");
+                    document.getElementById(tab.dataset.businessTarget).hidden = false;
+                });
+            });
 
             function updateDestinationPreview() {
                 const value = destinationInput.value.trim();
@@ -383,6 +433,30 @@
                 }
             }
 
+            async function copyResolvedBusinessReview() {
+                if (!resolvedReviewUrl) {
+                    resolvedBusinessCopyMessage.textContent = "Proses link Google Maps dan pilih bisnis terlebih dahulu.";
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(resolvedReviewUrl);
+                    resolvedBusinessCopyMessage.textContent = "Link review berhasil disalin. Tempelkan ke kolom Link Google tujuan.";
+                } catch (error) {
+                    const copyArea = document.createElement("textarea");
+                    copyArea.value = resolvedReviewUrl;
+                    copyArea.style.position = "fixed";
+                    copyArea.style.opacity = "0";
+                    document.body.appendChild(copyArea);
+                    copyArea.select();
+                    const copied = document.execCommand("copy");
+                    copyArea.remove();
+                    resolvedBusinessCopyMessage.textContent = copied
+                        ? "Link review berhasil disalin. Tempelkan ke kolom Link Google tujuan."
+                        : "Gagal menyalin. Salin link secara manual: " + resolvedReviewUrl;
+                }
+            }
+
             function showSelectedBusiness(item) {
                 const placeId = item.placeId || item.place_id || item.id || "";
                 if (!placeId) {
@@ -400,7 +474,6 @@
                 businessSelected.hidden = false;
                 businessSelected.style.display = "block";
                 businessSearchStatus.textContent = "Bisnis dipilih. Salin link review, lalu tempelkan ke kolom Link Google tujuan.";
-                updateShopSearch();
             }
 
             async function searchBusinesses(query) {
@@ -463,29 +536,91 @@
                 businessResults.replaceChildren();
                 businessResults.style.display = "none";
 
-                const query = [
-                    businessSearchInput.value.trim(),
-                    shopLocationInput.value.trim()
-                ].filter(Boolean).join(" ");
-
-                if (query.length < 2) {
+                const businessName = shopNameInput.value.trim();
+                const location = shopLocationInput.value.trim();
+                if (businessName.length < 2) {
                     businessSearchStatus.textContent = "Ketik minimal 2 karakter untuk mencari.";
                     return;
                 }
-                if (query.length > 120) {
-                    businessSearchStatus.textContent = "Pencarian maksimal 120 karakter.";
-                    return;
-                }
+
+                const queryWithLocation = [businessName, location].filter(Boolean).join(" ");
+                const query = queryWithLocation.length <= 120 ? queryWithLocation : businessName;
 
                 businessSearchTimer = setTimeout(() => searchBusinesses(query), 350);
             }
 
+            async function resolveBusinessMapsLink() {
+                businessMapsStatus.textContent = "";
+                resolvedBusiness.style.display = "none";
+                resolvedReviewUrl = "";
+                resolvedBusinessCopyMessage.textContent = "";
+                openResolvedBusinessMaps.removeAttribute("href");
+
+                const value = businessMapsInput.value.trim();
+                let mapsUrl;
+                try {
+                    mapsUrl = new URL(value);
+                } catch {
+                    businessMapsStatus.textContent = "Tempel link Google Maps yang valid.";
+                    return;
+                }
+
+                const isGoogleMapsUrl =
+                    mapsUrl.protocol === "https:" &&
+                    !mapsUrl.username &&
+                    !mapsUrl.password &&
+                    !mapsUrl.port &&
+                    (
+                        mapsUrl.hostname === "maps.app.goo.gl" ||
+                        mapsUrl.hostname === "maps.google.com" ||
+                        ((mapsUrl.hostname === "www.google.com" || mapsUrl.hostname === "google.com") &&
+                            mapsUrl.pathname.startsWith("/maps"))
+                    );
+
+                if (!isGoogleMapsUrl || value.length > 2048) {
+                    businessMapsStatus.textContent = "Gunakan link HTTPS dari Google Maps.";
+                    return;
+                }
+
+                businessMapsStatus.textContent = "Memproses link Maps...";
+                try {
+                    const response = await fetch(
+                        "/api/business-search?action=resolveMapsLink&url=" + encodeURIComponent(value)
+                    );
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || "Gagal memproses link Maps.");
+                    }
+
+                    const placeId = data.placeId || data.place_id || data.id || "";
+                    if (!placeId) {
+                        businessMapsStatus.textContent = "Place ID tidak ditemukan. Periksa link atau pilih cara pencarian nama bisnis.";
+                        return;
+                    }
+
+                    resolvedReviewUrl = makeReviewUrl(placeId);
+                    resolvedBusinessName.textContent = data.name || "Nama bisnis tidak tersedia";
+                    resolvedBusinessAddress.textContent = data.address || "Alamat tidak tersedia";
+                    openResolvedBusinessMaps.href = value;
+                    resolvedBusiness.style.display = "block";
+                    businessMapsStatus.textContent = "Bisnis ditemukan. Salin link review, lalu tempelkan ke kolom Link Google tujuan.";
+                    if (data.name) {
+                        shopNameInput.value = data.name;
+                    }
+                } catch (error) {
+                    console.error("Google Maps link resolution failed:", error);
+                    businessMapsStatus.textContent = error.message || "Gagal memproses link Maps. Coba lagi.";
+                }
+            }
+
             document.getElementById("copyBusinessReview")
                 .addEventListener("click", copyBusinessReview);
-            businessSearchInput.addEventListener("input", scheduleBusinessSearch);
+            document.getElementById("copyResolvedBusinessReview")
+                .addEventListener("click", copyResolvedBusinessReview);
+            document.getElementById("resolveBusinessMaps")
+                .addEventListener("click", resolveBusinessMapsLink);
+            shopNameInput.addEventListener("input", scheduleBusinessSearch);
             shopLocationInput.addEventListener("input", scheduleBusinessSearch);
-            shopNameInput.addEventListener("input", updateShopSearch);
-            shopLocationInput.addEventListener("input", updateShopSearch);
             destinationInput.addEventListener("input", updateDestinationPreview);
 
             form.addEventListener("submit", async (event) => {
