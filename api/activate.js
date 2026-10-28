@@ -85,9 +85,8 @@ module.exports = async function handler(req, res) {
         typeof shopName !== "string" ||
         shopName.trim().length < 2 ||
         shopName.trim().length > 100 ||
-        typeof shopLocation !== "string" ||
-        shopLocation.trim().length < 2 ||
-        shopLocation.trim().length > 100 ||
+        (shopLocation !== undefined &&
+            (typeof shopLocation !== "string" || shopLocation.trim().length > 100)) ||
         typeof destination !== "string" ||
         !isAllowedGoogleLink(destination)
     ) {
@@ -126,7 +125,7 @@ module.exports = async function handler(req, res) {
 
             transaction.update(cardRef, {
                 shopName: shopName.trim(),
-                shopLocation: shopLocation.trim(),
+                shopLocation: typeof shopLocation === "string" ? shopLocation.trim() : "",
                 destination,
                 active: true
             });
