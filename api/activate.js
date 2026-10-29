@@ -70,7 +70,6 @@ module.exports = async function handler(req, res) {
 
     const {
         cardId,
-        activationPassword,
         shopName,
         shopLocation,
         destination
@@ -79,9 +78,6 @@ module.exports = async function handler(req, res) {
     if (
         typeof cardId !== "string" ||
         !/^[A-HJ-NP-Z2-9]{6}$/.test(cardId) ||
-        typeof activationPassword !== "string" ||
-        activationPassword.length < 12 ||
-        activationPassword.length > 128 ||
         typeof shopName !== "string" ||
         shopName.trim().length < 2 ||
         shopName.trim().length > 100 ||
@@ -94,20 +90,6 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        const expectedPassword = process.env.ACTIVATION_PASSWORD;
-        if (!expectedPassword || expectedPassword.length < 16) {
-            throw new Error("ACTIVATION_PASSWORD must be configured with at least 16 characters.");
-        }
-
-        const providedBuffer = Buffer.from(activationPassword, "utf8");
-        const expectedBuffer = Buffer.from(expectedPassword, "utf8");
-        if (
-            providedBuffer.length !== expectedBuffer.length ||
-            !crypto.timingSafeEqual(providedBuffer, expectedBuffer)
-        ) {
-            return sendJson(res, 403, { error: "Password aktivasi salah." });
-        }
-
         const db = getDatabase();
         const cardRef = db.collection("cards").doc(cardId);
         const destinationRef = db.collection("cardDestinations").doc(cardId);
@@ -122,12 +104,16 @@ module.exports = async function handler(req, res) {
             if (card.active === true || card.destination) {
                 return "already-active";
             }
+            if (card.activationPasswordVerified !== true) {
+                return "password-required";
+            }
 
             transaction.update(cardRef, {
                 shopName: shopName.trim(),
                 shopLocation: typeof shopLocation === "string" ? shopLocation.trim() : "",
                 destination,
-                active: true
+                active: true,
+                activationPasswordVerified: false
             });
             transaction.set(destinationRef, {
                 active: true,
@@ -142,6 +128,9 @@ module.exports = async function handler(req, res) {
         }
         if (result === "already-active") {
             return sendJson(res, 409, { error: "Kartu sudah aktif. Hubungi admin jika perlu bantuan." });
+        }
+        if (result === "password-required") {
+            return sendJson(res, 403, { error: "Masukkan password aktivasi terlebih dahulu." });
         }
 
         return sendJson(res, 200, { ok: true });
