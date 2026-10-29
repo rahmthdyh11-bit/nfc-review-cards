@@ -284,13 +284,60 @@
             description.textContent = detail;
         }
 
-        function openActivationForm(cardId) {
-            showMessage("Aktivasi Kartu", "Cari bisnis atau tempel link Google Maps, lalu isi data aktivasi.");
+        function openPasswordForm(cardId) {
+            showMessage("Password Aktivasi", "Masukkan password untuk melanjutkan ke pengisian data toko.");
             activation.innerHTML = `
-                <form id="activationForm">
+                <form id="passwordForm">
                     <p class="muted">Kode kartu: <strong id="cardCode"></strong></p>
                     <label for="activationPassword">Password Aktivasi</label>
                     <input id="activationPassword" name="activationPassword" type="password" required autocomplete="current-password" maxlength="128" placeholder="Masukkan password aktivasi">
+                    <button id="verifyButton" type="submit">Lanjutkan</button>
+                </form>
+            `;
+            document.getElementById("cardCode").textContent = cardId;
+
+            const form = document.getElementById("passwordForm");
+            const passwordInput = document.getElementById("activationPassword");
+            const button = document.getElementById("verifyButton");
+            form.addEventListener("submit", async event => {
+                event.preventDefault();
+                message.textContent = "";
+                if (passwordInput.value.length < 12) {
+                    message.textContent = "Masukkan password aktivasi yang valid.";
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = "Memeriksa...";
+                try {
+                    const response = await fetch("/api/activation", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            cardId,
+                            activationPassword: passwordInput.value
+                        })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) {
+                        throw new Error(result.error || "Verifikasi password gagal.");
+                    }
+
+                    openActivationForm(cardId);
+                } catch (error) {
+                    console.error("Activation password verification failed:", error);
+                    message.textContent = error.message || "Verifikasi gagal. Silakan coba lagi.";
+                    button.disabled = false;
+                    button.textContent = "Lanjutkan";
+                }
+            });
+        }
+
+        function openActivationForm(cardId) {
+            showMessage("Data Toko", "Cari bisnis atau tempel link Google Maps, lalu isi data toko.");
+            activation.innerHTML = `
+                <form id="activationForm">
+                    <p class="muted">Kode kartu: <strong id="cardCode"></strong></p>
                     <label for="shopName">Nama Toko + Kota</label>
                     <input id="shopName" name="shopName" type="text" maxlength="100" required autocomplete="organization" placeholder="Contoh: Kedai Kopi Bandung">
                     <div class="business-search">
@@ -337,7 +384,6 @@
 
             const form = document.getElementById("activationForm");
             const shopNameInput = document.getElementById("shopName");
-            const activationPasswordInput = document.getElementById("activationPassword");
             const businessSearchStatus = document.getElementById("businessSearchStatus");
             const businessResults = document.getElementById("businessResults");
             const businessSelected = document.getElementById("businessSelected");
@@ -650,16 +696,14 @@
                 message.textContent = "";
 
                 const shop = document.getElementById("shopName").value.trim();
-                const activationPassword = activationPasswordInput.value;
                 const destination = destinationInput.value.trim();
 
                 if (
                     !shop ||
                     shop.length > 100 ||
-                    activationPassword.length < 12 ||
                     !isAllowedGoogleLink(destination)
                 ) {
-                    message.textContent = "Periksa kembali data aktivasi. Pastikan nama toko, password, dan link Google valid.";
+                    message.textContent = "Periksa kembali nama toko dan link Google.";
                     return;
                 }
 
@@ -673,7 +717,6 @@
                         },
                         body: JSON.stringify({
                             cardId,
-                            activationPassword,
                             shopName: shop,
                             destination
                         })
@@ -704,7 +747,16 @@
             try {
                 const cardSnap = await getDoc(doc(db, "cardDestinations", cardId));
                 if (!cardSnap.exists()) {
-                    openActivationForm(cardId);
+                    const response = await fetch("/api/activation?code=" + encodeURIComponent(cardId));
+                    const status = await response.json();
+                    if (!response.ok) {
+                        throw new Error(status.error || "Tidak dapat memeriksa status aktivasi.");
+                    }
+                    if (status.verified === true) {
+                        openActivationForm(cardId);
+                    } else {
+                        openPasswordForm(cardId);
+                    }
                     return;
                 }
                 const data = cardSnap.data();
