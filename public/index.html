@@ -85,6 +85,25 @@
             cursor: wait;
         }
 
+        .destination-input-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .destination-input-row input {
+            flex: 1;
+            min-width: 0;
+            margin-top: 0;
+        }
+
+        .paste-button {
+            width: auto;
+            flex: 0 0 auto;
+            margin: 0;
+            padding: 0 16px;
+        }
+
         #message {
             min-height: 24px;
             margin-bottom: 0;
@@ -375,7 +394,11 @@
                         </section>
                     </div>
                     <label for="destination">Link Google Tujuan</label>
-                    <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Tempel link Google Maps Review">
+                    <div class="destination-input-row">
+                        <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Tempel link Google Maps Review">
+                        <button id="pasteDestinationButton" class="paste-button" type="button">Tempel</button>
+                    </div>
+                    <p id="pasteDestinationStatus" class="muted business-search-status" role="status" aria-live="polite"></p>
                     <a id="destinationPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Pratinjau link</a>
                     <button id="activateButton" type="submit">Aktifkan kartu</button>
                 </form>
@@ -400,6 +423,8 @@
             const resolvedBusinessCopyMessage = document.getElementById("resolvedBusinessCopyMessage");
             const destinationInput = document.getElementById("destination");
             const destinationPreview = document.getElementById("destinationPreview");
+            const pasteDestinationButton = document.getElementById("pasteDestinationButton");
+            const pasteDestinationStatus = document.getElementById("pasteDestinationStatus");
             const button = document.getElementById("activateButton");
             let businessSearchTimer;
             let businessSearchController;
@@ -454,6 +479,28 @@
                 destinationPreview.href = value;
                 destinationPreview.hidden = false;
             }
+
+            pasteDestinationButton.addEventListener("click", async () => {
+                pasteDestinationButton.disabled = true;
+                pasteDestinationStatus.textContent = "";
+                try {
+                    if (!navigator.clipboard?.readText) {
+                        throw new Error("Clipboard access is unavailable.");
+                    }
+
+                    destinationInput.value = (await navigator.clipboard.readText()).trim();
+                    destinationInput.dispatchEvent(new Event("input", { bubbles: true }));
+                    pasteDestinationStatus.textContent = destinationInput.value
+                        ? "Link berhasil ditempel."
+                        : "Clipboard kosong.";
+                } catch (error) {
+                    console.error("Could not paste Google destination link:", error);
+                    pasteDestinationStatus.textContent =
+                        "Clipboard tidak bisa dibaca. Tempel link secara manual dengan Ctrl+V.";
+                } finally {
+                    pasteDestinationButton.disabled = false;
+                }
+            });
 
             function makeMapsSearchUrl(item) {
                 const mapsUrl = new URL("https://www.google.com/maps/search/");
