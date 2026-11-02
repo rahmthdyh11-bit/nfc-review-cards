@@ -10,7 +10,7 @@
     },
     {
       "source": "/kelola-kartu",
-      "destination": "/admin.html"
+      "destination": "/admin-dashboard.html"
     },
     {
       "source": "/:cardId",
