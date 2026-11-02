@@ -105,6 +105,15 @@
         }
 
 
+        #resetShopBtn {
+
+            background: #b42318;
+
+            color: white;
+
+        }
+
+
         #logoutBtn {
 
             background: #ddd;
@@ -296,6 +305,13 @@
     </button>
 
 
+    <button id="resetShopBtn" type="button">
+
+        Reset Data Toko
+
+    </button>
+
+
     <p id="message"></p>
 
 
@@ -473,6 +489,12 @@
     const saveBtn =
         document.getElementById(
             "saveBtn"
+        );
+
+
+    const resetShopBtn =
+        document.getElementById(
+            "resetShopBtn"
         );
 
 
@@ -1142,6 +1164,64 @@
 
     );
 
+
+    // Reset shop data so the card can be activated again without the password.
+
+    resetShopBtn.addEventListener(
+
+        "click",
+
+        async () => {
+
+            const cardId = cardSelect.value;
+            if (!cardId) {
+                message.textContent =
+                    "Please select a card to reset.";
+                return;
+            }
+
+            const shop = shopName.value.trim();
+            const confirmed = window.confirm(
+                `Reset data toko pada kartu ${cardId}${shop ? ` (${shop})` : ""}? ` +
+                "Kartu akan dinonaktifkan dan data toko/link tujuan dihapus. " +
+                "Setelah kartu dipindai, data toko dapat diisi kembali tanpa password aktivasi."
+            );
+            if (!confirmed) {
+                return;
+            }
+
+            resetShopBtn.disabled = true;
+            message.textContent = "Mereset data toko...";
+
+            try {
+                const batch = writeBatch(db);
+                batch.update(doc(db, "cards", cardId), {
+                    shopName: "",
+                    shopLocation: "",
+                    destination: "",
+                    active: false,
+                    activationPasswordVerified: true
+                });
+                batch.delete(doc(db, "cardDestinations", cardId));
+                await batch.commit();
+
+                await loadCards();
+                cardSelect.value = cardId;
+                activeCardSelect.value = "";
+                await loadSelectedCard(cardId);
+                message.textContent =
+                    "Data toko berhasil direset. Pindai kartu untuk mengisi data toko baru tanpa password aktivasi.";
+            } catch (error) {
+                console.error("Error resetting shop data:", error);
+                message.textContent =
+                    "Gagal mereset data toko: " +
+                    error.message;
+            } finally {
+                resetShopBtn.disabled = false;
+            }
+        }
+
+    );
 
 
     // Logout
