@@ -76,6 +76,36 @@
 
         }
 
+        .destination-input-row {
+
+            display: flex;
+
+            gap: 8px;
+
+        }
+
+        .destination-input-row input {
+
+            flex: 1;
+
+            min-width: 0;
+
+        }
+
+        .paste-button {
+
+            width: auto;
+
+            margin-top: 0;
+
+            padding: 0 16px;
+
+            background: #f97316;
+
+            color: white;
+
+        }
+
 
         button {
 
@@ -260,11 +290,16 @@
 
     </label>
 
-    <input
-        type="url"
-        id="reviewUrl"
-        placeholder="Paste the Google link to open when the card is scanned"
-    >
+    <div class="destination-input-row">
+        <input
+            type="url"
+            id="reviewUrl"
+            placeholder="Paste the Google link to open when the card is scanned"
+        >
+        <button id="pasteReviewUrlButton" class="paste-button" type="button">Tempel</button>
+    </div>
+
+    <p id="pasteReviewUrlStatus" role="status" aria-live="polite"></p>
 
     <p>
         Paste the Google Search, Maps, or direct review link to use for this card.
@@ -444,6 +479,38 @@
         document.getElementById(
             "mapsPreview"
         );
+
+    const pasteReviewUrlButton =
+        document.getElementById(
+            "pasteReviewUrlButton"
+        );
+
+    const pasteReviewUrlStatus =
+        document.getElementById(
+            "pasteReviewUrlStatus"
+        );
+
+    pasteReviewUrlButton.addEventListener("click", async () => {
+        pasteReviewUrlButton.disabled = true;
+        pasteReviewUrlStatus.textContent = "";
+        try {
+            if (!navigator.clipboard?.readText) {
+                throw new Error("Clipboard access is unavailable.");
+            }
+
+            reviewUrl.value = (await navigator.clipboard.readText()).trim();
+            reviewUrl.dispatchEvent(new Event("input", { bubbles: true }));
+            pasteReviewUrlStatus.textContent = reviewUrl.value
+                ? "Link berhasil ditempel."
+                : "Clipboard kosong.";
+        } catch (error) {
+            console.error("Could not paste Google destination link:", error);
+            pasteReviewUrlStatus.textContent =
+                "Clipboard tidak bisa dibaca. Tempel link secara manual dengan Ctrl+V.";
+        } finally {
+            pasteReviewUrlButton.disabled = false;
+        }
+    });
 
     function updateShopSearch() {
         const searchText = [
