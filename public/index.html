@@ -859,10 +859,10 @@
                 startActivation(cardId);
             }
         } else if (path === "/kelola-kartu") {
-            window.location.replace("/admin.html");
+            window.location.replace("/admin-dashboard.html");
         } else if (path.startsWith("/edit/")) {
             const cardId = decodeURIComponent(path.slice("/edit/".length));
-            const target = new URL("/admin.html", window.location.origin);
+            const target = new URL("/kelola-kartu", window.location.origin);
             target.searchParams.set("card", cardId);
             window.location.replace(target.toString());
         } else if (path === "/" || path === "/index.html") {
