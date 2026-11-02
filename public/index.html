@@ -101,7 +101,19 @@
             width: auto;
             flex: 0 0 auto;
             margin: 0;
-            padding: 0 16px;
+            padding: 0 12px;
+            display: grid;
+            place-items: center;
+        }
+
+        .paste-button svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.8;
         }
 
         #message {
@@ -396,7 +408,13 @@
                     <label for="destination">Link Google Tujuan</label>
                     <div class="destination-input-row">
                         <input id="destination" name="destination" type="url" required inputmode="url" placeholder="Tempel link Google Maps Review">
-                        <button id="pasteDestinationButton" class="paste-button" type="button">Tempel</button>
+                        <button id="pasteDestinationButton" class="paste-button" type="button" aria-label="Tempel link dari clipboard" title="Tempel link dari clipboard">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-2"></path>
+                                <rect x="8" y="3" width="12" height="15" rx="2"></rect>
+                                <path d="M11 7h6M11 11h6"></path>
+                            </svg>
+                        </button>
                     </div>
                     <p id="pasteDestinationStatus" class="muted business-search-status" role="status" aria-live="polite"></p>
                     <a id="destinationPreview" href="#" target="_blank" rel="noopener noreferrer" hidden>Pratinjau link</a>
